@@ -196,113 +196,131 @@ void hhcl::pvirtvorpruefggfmehrfach()
 void hhcl::pvirtfuehraus() //α
 { //ω
 	char cpt[MAXHOSTNAMELEN]; size_t cptlen = MAXHOSTNAMELEN;
-		gethostname(cpt, cptlen);
-		const string pdfzt{"test -f '"+datei+"' -a ! '"+datei+"' -ot '"+quelldat+"'||pdftotext -layout '"+quelldat+"' '"+datei+"'"}; //pdfzutext
-	system(pdfzt.c_str());
-		struct stat s1;
-	caus<<"datei: "<<datei<<endl;
+	gethostname(cpt, cptlen);
+	const string pdfzt{"test -f '"+datei+"' -a ! '"+datei+"' -ot '"+quelldat+"'||pdftotext -layout '"+quelldat+"' '"+datei+"'"}; //pdfzutext
+	systemrueck(pdfzt.c_str(),obverb,oblog);
+	struct stat s1;
+	if (obverb) caus<<"datei: "<<datei<<endl;
 	if (lstat(datei.c_str(),&s1)) {
 		fLog(string("lstat fehlgeschlagen: ") + strerror(errno) + " bei Datei:"+drot+datei+schwarz,1,1);
 		return;
 	}
-	struct tm ta; // abgerufen
+	int einzulesen{0};
+	struct tm ta{0}; // abgerufen
 	memcpy(&ta,localtime(&s1.st_mtime),sizeof ta);
-
-		FILE* const infile{fopen(datei.c_str(),"r")};
-	if (!infile) {
-		perror((string("\nKann Termindatei '")+datei+"' nicht zum Lesen öffnen.").c_str());
-		return;
+	char ***cerg;
+	RS aktzmax(My,"SELECT max(aktzeit) FROM `"+tbtab+"`",aktc,ZDB);
+	if (cerg=aktzmax.HolZeile(),cerg?*cerg:0) {
+		if (obverb) caus<<cjj(cerg,0)<<endl;
+		char buf[100];
+		strftime(buf, sizeof(buf), "%Y-%m-%d %T", &ta);
+		if (obverb) caus<<buf<<endl;
+    struct tm tmj{0};
+		strptime(cjj(cerg,0),"%Y-%m-%d %T",&tmj);
+		if (obverb) caus<<mktime(&tmj)<<endl;
+		if (obverb) caus<<s1.st_mtime<<endl;
+		if (mktime(&tmj)<s1.st_mtime) einzulesen=1;
+  } else {
+		einzulesen=1;
 	}
-	RS start(My,"START TRANSACTION",aktc,ZDB);
-	char Zeile[256];
-//	int anzufangen=1;
-	vector<instyp> einf;
-	int munu{-1};
-	while (fgets(Zeile, sizeof Zeile, infile)) {
-		string lfdnr(Zeile+6,8), restl(Zeile+14);
-		if (isnumeric(lfdnr)){
-			char /*lfd[10],pids[11],*/wota[11],name[100],gebdat[21]/*,raum[21],zusatz[300]*/;
-			/* *raum=0, *zusatz=0,*pids=0; */ 
-			string lfd(10,0),pids(11,0),raum(21,0),zusatz(300,0);
-			struct tm tzeit {0};
-			// \0 geht auf Linux nicht!
-			const char* const mu[]{
-//				"%10[^\1]%10[^\1]%2d.%2d.%4d%2d:%2d %[^\\]\\(%[^\\]\\%s %[^\1]",
-				"%10[^\1]%10s%3s%2d.%2d.%4d%2d:%2d %35[^\\(](%10[^\\)])%10s%[^\1]",
-			};
-			int serg;
-			for(size_t aktmunu=0;aktmunu<sizeof mu/sizeof *mu;aktmunu++) {
-				if (munu!=-1) aktmunu=munu;
-				serg=sscanf(Zeile,mu[aktmunu],&lfd[0],&pids[0],wota,&tzeit.tm_mday,&tzeit.tm_mon,&tzeit.tm_year,&tzeit.tm_hour,&tzeit.tm_min,
-						name,gebdat,&raum[0],&zusatz[0]);
-				if (serg>10) munu=aktmunu;
-				if (munu!=-1) break;
-			}
-			if (obverb) caus<<"serg: "<<rot<<serg<<schwarz<<endl;
-			// trim(pids); 
-			for (int nd=0,i=pids.length();i;i--) {
-				if (!pids[i]) nd=1; 
-				else if (nd && pids[i]!=32) break;
-				pids[i]=0;
-			}
-			gtrim(&restl);
-			if (!serg) {
-				cout<<strerror(errno)<<endl;
-				cout<<restl<<endl<<"pids: "<<pids<<", Fehler bim Split von:"<<lfdnr<<endl;
-				//		  wait();
-				return;
-			} else {
-				tzeit.tm_mon--;
-				tzeit.tm_year-=1900;
-				if (tzeit.tm_year <0) {
-					if (!(/*!strlen(pids.c_str())&&*/tzeit.tm_year==-1900))
-					cout<<"lfdnr: '"<<lfd<<"', pids: '"<<pids<<"', wota: "<<wota<<", D: "<<tzeit.tm_mday<<"."<<tzeit.tm_mon<<"."<<tzeit.tm_year<<" "<<tzeit.tm_hour<<":"<<tzeit.tm_min<<", name: "<<name<<", gebdat: "<<gebdat<<", raum: "<<raum<<", zusatz: "<<zusatz<<endl;
-					//			  cout<<lfdnr.length()<<" "<<lfdnr.find_first_not_of(" 0123456789\0")<<" "<<lfdnr.find_first_not_of("0123456789")<<"Jahresfehler;\n";
-				} else if (1) {
-					/*
-					caus<<rot;
-					cout<<"lfdnr: '"<<lfd<<"', pids: '"<<pids<<"', wota: "<<wota<<", D: "<<tzeit.tm_mday<<"."<<tzeit.tm_mon<<"."<<tzeit.tm_year<<" "<<tzeit.tm_hour<<":"<<tzeit.tm_min<<", name: "<<name<<", gebdat: "<<gebdat<<", raum: "<<raum<<", zusatz: "<<zusatz<<endl;
-					caus<<schwarz;
-					*/
-					string at1(asctime(&tzeit));
-					at1 = at1.substr(0,at1.length()-1);
-					if (isnumeric(pids.c_str())) {
-						char buf[1000];
-						memset(buf,0,sizeof buf);
-						time_t t;
-						struct tm *ts;
-						t = time(NULL);
-						ts = localtime(&t);
-						//caus<<"raum: '"<<raum<<"', gtrim(&raum): '"<<*gtrim(&raum)<<"', sqlft: '"<<sqlft(MySQL,gtrim(&raum))<<"'\n";
-						//caus<<"zusatz: '"<<zusatz<<"', gtrim(&zusatz): '"<<*gtrim(&zusatz)<<"', sqlft: '"<<sqlft(MySQL,gtrim(&zusatz))<<"'\n";
-						RS loe(My,"DELETE FROM `"+tbtab+"` WHERE zp="+sqlft(MySQL,&tzeit)+" AND raum="+sqlft(MySQL,raum)+" AND pid="+sqlft(MySQL,pids),aktc,ZDB);
-						RS rins(My,tbtab); 
-						einf.clear();
-						einf.push_back(instyp(My->DBS,"pid",atol(pids.c_str())));
-						einf.push_back(instyp(My->DBS,"zp",&tzeit));
-						einf.push_back(instyp(My->DBS,"zusatz",gtrim(&zusatz)));
-						einf.push_back(instyp(My->DBS,"raum",raum));
-						einf.push_back(instyp(My->DBS,"aktzeit",ts));
-						einf.push_back(instyp(My->DBS,"abgerufen",&ta));
-						struct tm gtm{0};
-						strptime(gebdat,"%d.%m.%Y",&gtm);
-						einf.push_back(instyp(My->DBS,"gebdat",&gtm));
-						rins.tbins(&einf,aktc,/*sammeln=*/0,/*obverb=*/ZDB,/*idp=*/0,/*eindeutig=*/0); 
-						if (rins.fnr) {
-							fLog(Tx[T_Fehler_af]+drots+ltoan(rins.fnr)+schwarz+Txk[T_bei]+tuerkis+rins.sql+schwarz+": "+blau+rins.fehler+schwarz,1,1);
-						} //         if (runde==1)
-						//							anzufangen=0;
-					} // if (isnumeric(pids)) 
-				} // if (tzeit.tm_year <0) else
-			} // if (!serg) else 
-		} // if (isnumeric(lfdnr))
-	} // while (fgets(Zeile, sizeof Zeile, infile))
-	einf.clear();
-	RS rins(My,tbtab); 
-	rins.tbins(&einf,aktc,ZDB,0,0);
-	RS commit(My,"COMMIT",aktc,ZDB);
-	// My.insert(einf,&fehler,0,0);
-	fclose(infile);
+
+	if (einzulesen) {
+		FILE* const infile{fopen(datei.c_str(),"r")};
+		if (!infile) {
+			perror((string("\nKann Termindatei '")+datei+"' nicht zum Lesen öffnen.").c_str());
+			return;
+		}
+		RS start(My,"START TRANSACTION",aktc,ZDB);
+		char Zeile[256];
+		//	int anzufangen=1;
+		vector<instyp> einf;
+		int munu{-1};
+		while (fgets(Zeile, sizeof Zeile, infile)) {
+			string lfdnr(Zeile+6,8), restl(Zeile+14);
+			if (isnumeric(lfdnr)){
+				char /*lfd[10],pids[11],*/wota[11],name[100],gebdat[21]/*,raum[21],zusatz[300]*/;
+				/* *raum=0, *zusatz=0,*pids=0; */ 
+				string lfd(10,0),pids(11,0),raum(21,0),zusatz(300,0);
+				struct tm tzeit {0};
+				// \0 geht auf Linux nicht!
+				const char* const mu[]{
+					//				"%10[^\1]%10[^\1]%2d.%2d.%4d%2d:%2d %[^\\]\\(%[^\\]\\%s %[^\1]",
+					"%10[^\1]%10s%3s%2d.%2d.%4d%2d:%2d %35[^\\(](%10[^\\)])%10s%[^\1]",
+				};
+				int serg;
+				for(size_t aktmunu=0;aktmunu<sizeof mu/sizeof *mu;aktmunu++) {
+					if (munu!=-1) aktmunu=munu;
+					serg=sscanf(Zeile,mu[aktmunu],&lfd[0],&pids[0],wota,&tzeit.tm_mday,&tzeit.tm_mon,&tzeit.tm_year,&tzeit.tm_hour,&tzeit.tm_min,
+							name,gebdat,&raum[0],&zusatz[0]);
+					if (serg>10) munu=aktmunu;
+					if (munu!=-1) break;
+				}
+				//			if (obverb) caus<<"serg: "<<rot<<serg<<schwarz<<endl;
+				// trim(pids); 
+				for (int nd=0,i=pids.length();i;i--) {
+					if (!pids[i]) nd=1; 
+					else if (nd && pids[i]!=32) break;
+					pids[i]=0;
+				}
+				gtrim(&restl);
+				if (!serg) {
+					cout<<strerror(errno)<<endl;
+					cout<<restl<<endl<<"pids: "<<pids<<", Fehler bim Split von:"<<lfdnr<<endl;
+					//		  wait();
+					return;
+				} else {
+					tzeit.tm_mon--;
+					tzeit.tm_year-=1900;
+					if (tzeit.tm_year <0) {
+						if (!(/*!strlen(pids.c_str())&&*/tzeit.tm_year==-1900))
+							cout<<"lfdnr: '"<<lfd<<"', pids: '"<<pids<<"', wota: "<<wota<<", D: "<<tzeit.tm_mday<<"."<<tzeit.tm_mon<<"."<<tzeit.tm_year<<" "<<tzeit.tm_hour<<":"<<tzeit.tm_min<<", name: "<<name<<", gebdat: "<<gebdat<<", raum: "<<raum<<", zusatz: "<<zusatz<<endl;
+						//			  cout<<lfdnr.length()<<" "<<lfdnr.find_first_not_of(" 0123456789\0")<<" "<<lfdnr.find_first_not_of("0123456789")<<"Jahresfehler;\n";
+					} else if (1) {
+						/*
+							 caus<<rot;
+							 cout<<"lfdnr: '"<<lfd<<"', pids: '"<<pids<<"', wota: "<<wota<<", D: "<<tzeit.tm_mday<<"."<<tzeit.tm_mon<<"."<<tzeit.tm_year<<" "<<tzeit.tm_hour<<":"<<tzeit.tm_min<<", name: "<<name<<", gebdat: "<<gebdat<<", raum: "<<raum<<", zusatz: "<<zusatz<<endl;
+							 caus<<schwarz;
+						 */
+						string at1(asctime(&tzeit));
+						at1 = at1.substr(0,at1.length()-1);
+						if (isnumeric(pids.c_str())) {
+							char buf[1000];
+							memset(buf,0,sizeof buf);
+							time_t t;
+							struct tm *ts;
+							t = time(NULL);
+							ts = localtime(&t);
+							//caus<<"raum: '"<<raum<<"', gtrim(&raum): '"<<*gtrim(&raum)<<"', sqlft: '"<<sqlft(MySQL,gtrim(&raum))<<"'\n";
+							//caus<<"zusatz: '"<<zusatz<<"', gtrim(&zusatz): '"<<*gtrim(&zusatz)<<"', sqlft: '"<<sqlft(MySQL,gtrim(&zusatz))<<"'\n";
+							RS loe(My,"DELETE FROM `"+tbtab+"` WHERE zp="+sqlft(MySQL,&tzeit)+" AND raum="+sqlft(MySQL,raum)+" AND pid="+sqlft(MySQL,pids),aktc,ZDB);
+							RS rins(My,tbtab); 
+							einf.clear();
+							einf.push_back(instyp(My->DBS,"pid",atol(pids.c_str())));
+							einf.push_back(instyp(My->DBS,"zp",&tzeit));
+							einf.push_back(instyp(My->DBS,"zusatz",gtrim(&zusatz)));
+							einf.push_back(instyp(My->DBS,"raum",raum));
+							einf.push_back(instyp(My->DBS,"aktzeit",ts));
+							einf.push_back(instyp(My->DBS,"abgerufen",&ta));
+							struct tm gtm{0};
+							strptime(gebdat,"%d.%m.%Y",&gtm);
+							einf.push_back(instyp(My->DBS,"gebdat",&gtm));
+							rins.tbins(&einf,aktc,/*sammeln=*/0,/*obverb=*/ZDB,/*idp=*/0,/*eindeutig=*/0); 
+							if (rins.fnr) {
+								fLog(Tx[T_Fehler_af]+drots+ltoan(rins.fnr)+schwarz+Txk[T_bei]+tuerkis+rins.sql+schwarz+": "+blau+rins.fehler+schwarz,1,1);
+							} //         if (runde==1)
+							//							anzufangen=0;
+						} // if (isnumeric(pids)) 
+					} // if (tzeit.tm_year <0) else
+				} // if (!serg) else 
+			} // if (isnumeric(lfdnr))
+		} // while (fgets(Zeile, sizeof Zeile, infile))
+		einf.clear();
+		RS rins(My,tbtab); 
+		rins.tbins(&einf,aktc,ZDB,0,0);
+		RS commit(My,"COMMIT",aktc,ZDB);
+		// My.insert(einf,&fehler,0,0);
+		fclose(infile);
+	}
 	// wait();
 } // void hhcl::pvirtfuehraus  //α
 
