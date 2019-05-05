@@ -45,6 +45,8 @@ char const *DPROG_T[T_MAX+1][SprachZahl]={
 	{"Zahl der aufzulistenden Datensaetze = <zahl> statt","No. of listed entries = <no> instead of"},
 	// T_Datenbank_nicht_initialisierbar_breche_ab
 	{"Datenbank nicht initialisierbar, breche ab","database init failed, stopping"},
+	// T_pvirtfuehraus,
+	{"pvirtfuehraus()","pvirtexecute()"},
 	// T_Fuege_ein
 	{"Fuege ein: ","Inserting: "}, //ω
 	{"",""} //α
@@ -194,8 +196,9 @@ void hhcl::pvirtvorpruefggfmehrfach()
 } // void hhcl::pvirtvorpruefggfmehrfach //α
 //ω
 void hhcl::pvirtfuehraus() //α
-{ //ω
-	char cpt[MAXHOSTNAMELEN]; size_t cptlen = MAXHOSTNAMELEN;
+{ 
+	hLog(violetts+Tx[T_pvirtfuehraus]+schwarz); //ω
+	char cpt[MAXHOSTNAMELEN]; size_t cptlen{MAXHOSTNAMELEN};
 	gethostname(cpt, cptlen);
 	const string pdfzt{"test -f '"+datei+"' -a ! '"+datei+"' -ot '"+quelldat+"'||pdftotext -layout '"+quelldat+"' '"+datei+"'"}; //pdfzutext
 	systemrueck(pdfzt.c_str(),obverb,oblog);
@@ -209,16 +212,16 @@ void hhcl::pvirtfuehraus() //α
 	struct tm ta{0}; // abgerufen
 	memcpy(&ta,localtime(&s1.st_mtime),sizeof ta);
 	char ***cerg;
-	RS aktzmax(My,"SELECT max(aktzeit) FROM `"+tbtab+"`",aktc,ZDB);
+	RS aktzmax(My,"SELECT max(abgerufen) FROM `"+tbtab+"`",aktc,ZDB);
 	if (cerg=aktzmax.HolZeile(),cerg?*cerg:0) {
-		if (obverb) caus<<cjj(cerg,0)<<endl;
+		if (obverb) caus<<"max(abgerufen) from "<<tbtab<<": "<<cjj(cerg,0)<<endl;
 		char buf[100];
 		strftime(buf, sizeof(buf), "%Y-%m-%d %T", &ta);
-		if (obverb) caus<<buf<<endl;
+		if (obverb) caus<<"abgerufen: "<<buf<<endl;
     struct tm tmj{0};
 		strptime(cjj(cerg,0),"%Y-%m-%d %T",&tmj);
-		if (obverb) caus<<mktime(&tmj)<<endl;
-		if (obverb) caus<<s1.st_mtime<<endl;
+		if (obverb) caus<<"max(abgerufen) from "<<tbtab<<": "<<mktime(&tmj)<<endl;
+		if (obverb) caus<<"abgerufen: "<<s1.st_mtime<<endl;
 		if (mktime(&tmj)<s1.st_mtime) einzulesen=1;
   } else {
 		einzulesen=1;
@@ -276,19 +279,16 @@ void hhcl::pvirtfuehraus() //α
 							cout<<"lfdnr: '"<<lfd<<"', pids: '"<<pids<<"', wota: "<<wota<<", D: "<<tzeit.tm_mday<<"."<<tzeit.tm_mon<<"."<<tzeit.tm_year<<" "<<tzeit.tm_hour<<":"<<tzeit.tm_min<<", name: "<<name<<", gebdat: "<<gebdat<<", raum: "<<raum<<", zusatz: "<<zusatz<<endl;
 						//			  cout<<lfdnr.length()<<" "<<lfdnr.find_first_not_of(" 0123456789\0")<<" "<<lfdnr.find_first_not_of("0123456789")<<"Jahresfehler;\n";
 					} else if (1) {
-						/*
-							 caus<<rot;
+						if (obverb) {
 							 cout<<"lfdnr: '"<<lfd<<"', pids: '"<<pids<<"', wota: "<<wota<<", D: "<<tzeit.tm_mday<<"."<<tzeit.tm_mon<<"."<<tzeit.tm_year<<" "<<tzeit.tm_hour<<":"<<tzeit.tm_min<<", name: "<<name<<", gebdat: "<<gebdat<<", raum: "<<raum<<", zusatz: "<<zusatz<<endl;
-							 caus<<schwarz;
-						 */
+						}
 						string at1(asctime(&tzeit));
 						at1 = at1.substr(0,at1.length()-1);
 						if (isnumeric(pids.c_str())) {
-							char buf[1000];
-							memset(buf,0,sizeof buf);
-							time_t t;
+//							char buf[1000]{0};
+//							memset(buf,0,sizeof buf);
+							time_t t{time(0)};
 							struct tm *ts;
-							t = time(NULL);
 							ts = localtime(&t);
 							//caus<<"raum: '"<<raum<<"', gtrim(&raum): '"<<*gtrim(&raum)<<"', sqlft: '"<<sqlft(MySQL,gtrim(&raum))<<"'\n";
 							//caus<<"zusatz: '"<<zusatz<<"', gtrim(&zusatz): '"<<*gtrim(&zusatz)<<"', sqlft: '"<<sqlft(MySQL,gtrim(&zusatz))<<"'\n";

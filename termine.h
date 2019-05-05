@@ -20,6 +20,7 @@ enum T_
 	T_dszahl_l,
 	T_Zahl_der_aufzulistenden_Datensaetze_ist_zahl_statt,
 	T_Datenbank_nicht_initialisierbar_breche_ab,
+	T_pvirtfuehraus,
 	T_Fuege_ein, //ω
 	T_MAX //α
 }; // enum T_ //ω

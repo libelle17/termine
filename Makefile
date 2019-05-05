@@ -40,13 +40,14 @@
 # "make uninstall" => deinstalliert alles, frägt noch manchmal rück
 # "make allesweg" => deinstalliert alles, beantwortet Rückfragen automatisch mit 'y'
 # "make neuproj" => kopiert Dateien für neues Projekt in Verzeichnis fuer neues Projekt
+# "make shlist" => installiert die in "shliste" stehenden shell-Scripte (=bei make install dabei)
 
 ICH::=$(firstword $(MAKEFILE_LIST))
 SRCS::=$(wildcard *.cpp)
 OBJ::=$(SRCS:.cpp=.o)
-DN::=>/dev/null # DevNull
-KR::= $(DN) 2>&1 # keine Rueckmeldung
-KF::= 2$(DN) # keine Fehlermeldung
+DN::= >/dev/null# DevNull
+KR::= $(DN) 2>&1# keine Rueckmeldung
+KF::= 2$(DN)# keine Fehlermeldung
 # wenn aus vi aufgerufen, kein unnoetigen Ausgaben, BA=bedingte Ausgabe, BFA=bedingte Fehlerausgabe
 BA::=>&1
 BFA::=2>>fehler.txt
@@ -72,7 +73,16 @@ MINGCCNR::=6
 #// endif
 # maximal verfügbare g++-Version, falls die Verknüpfungen in /usr/bin stehen und evtl. /usr/bin/g++ nicht auf die höchste verknüpft ist
 # deren Hauptversionsnummer
-MAXGCCNR::=$(shell erg=0;for i in $$(seq 50 -1 1);do which g++-$$i $(KR)&&{ erg=$$i;break;};done;echo $$erg) # {50..1} geht bei dash nicht
+MAXGCCNR::=$(shell erg=0;for i in $$(seq 50 -1 1);do which g++-$$i $(KR)&&{ erg=$$i;break;};done;echo "$$erg")# {50..1} geht bei dash nicht
+CCName::=Nix
+ifeq ($(MAXGCCNR),0)
+	MAXGCCNR::=$(shell erg=$$(! which g++&&echo 0||g++ -v 2>&1|sed '$$!d;s/[^ ]* \([^.]*\).*/\1/');echo $$erg)
+	ifeq ($(MAXGCCNR)a,a)
+		MAXGCCNR::=0
+	endif
+	CCName::=g++
+endif
+	
 #1=verfügbare Version höher als die minimal notwendige, 0=nicht
 # 1=minimal notwendige Version verfügbar, 0=nicht
 GCCOK::=$(shell expr $(MAXGCCNR) \>\= $(MINGCCNR))
@@ -82,10 +92,13 @@ GCCOK::=$(shell expr $(MAXGCCNR) \>\= $(MINGCCNR))
 -include vars # wird durch install.sh generiert; DPROG und GDAT dürfen nur nachher verwendet werden
 ifeq ($(GCCOK),0)
 	# wenn minimal notwendige Version nicht verfügbar ist, dann diese neu als maximal installierbare definieren und später installieren
-  ifeq ($(shell expr $(OSNR) \<= 3),1)
+  ifeq ($(shell expr $(OSNR) \<\= 3),1)
   	MINVGCC::=$(shell apt-cache search '^g\+\+-[0-9]+$$' -n|cut -f2 -d'-'|sort -nr|head -n1)
   else ifeq ($(OSNR),4)
 	  MINVGCC::=$(shell which zypper $(KR)&&zypper se /gcc[^-]$*-c\\+\\+$$/|tail -n1|cut -dc -f3|cut -d- -f1||echo 0;)
+  #  else ifeq ($(OSNR),5)
+	else
+	  MINVGCC::=6
   endif
   ifeq ($(shell expr $(MINVGCC) \> $(MINGCCNR)),1)
 	  MINGCCNR::=$(MINVGCC)
@@ -94,8 +107,10 @@ endif
 ifeq ($(shell expr $(MAXGCCNR) \> $(MINGCCNR)),1)
 	MINGCCNR::=$(MAXGCCNR)
 endif
-CCName::=g++-$(MINGCCNR)
-ifeq ($(shell expr $(OSNR) \<= 3),1)
+ifeq ($(CCName),Nix)
+	CCName::=g++-$(MINGCCNR)
+endif
+ifeq ($(shell expr $(OSNR) \<\= 3),1)
 	CCInst::=gcc-$(MINGCCNR) g++-$(MINGCCNR)
 	DName::="Debian/Ubuntu/Mint"
 else ifeq ($(OSNR),4)
@@ -110,7 +125,7 @@ else ifeq ($(OSNR),7)
 else ifeq ($(OSNR),8)
 	DName::="Manjaro"
 endif
-ifeq ($(shell expr $(OSNR) \<= 4),1)
+ifeq ($(shell expr $(OSNR) \<\= 4),1)
 	COMP::=$(COMP) $(CCInst)
 endif
 CFLAGS::=-c -Wall
@@ -144,7 +159,7 @@ INSTEXEC::=$(EXPFAD)/$(EXEC)
 GDAT::=$(DTN:inst.log=)
 GDAT::=$(GDAT:uninstallinv=)
 GDAT::=$(GDAT:Makefile=Makefile.roh)
-CC::=$(CCName) # CC=$(SUDC)$(CCName)
+CC::=$(CCName)# CC=$(SUDC)$(CCName)
 pgd::=postgresql-$(dev)
 SUDC::=
 ifneq ($(shell echo $$EUID),0)
@@ -181,7 +196,7 @@ DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.Td
 
 rot::="\033[1;31m"
 gruen::="\033[0;32m"
-#blau="\033[0;34;1;47m"
+dblau::="\033[0;34;1;47m"
 blau::="\033[1;34m"
 reset::="\033[0m"
 
@@ -200,7 +215,7 @@ MANS+=$(_MAN)
 HTMLS::=$(patsubst %,%.html,$(MANS))
 GZS::=$(patsubst %,%.gz,$(MANS))
 
-.PHONY: all glei opt opt2 opt3 optfast opts optg altc neu new anzeig compiler
+.PHONY: all glei opt opt2 opt3 optfast opts optg altc neu new anzeig compiler git
 ifeq (,$(SRCS))
 $(info keine *.cpp-Dateien => kompiliere nichts)
 all glei opt opt2 opt3 optfast opts optg altc neu new anzeig $(EXEC) $(INSTEXEC) compiler:
@@ -223,7 +238,7 @@ optg: neu
 altc: CFLAGS+= -std=gnu++11
 altc: CCInst::=gcc-c++
 altc: CCName::=g++
-altc: CC::=$(CCName) # CC=$(SUDC)$(CCName)
+altc: CC::=$(CCName)# CC=$(SUDC)$(CCName)
 altc: opts
 new: neu
 neu: anzeig clean weiter
@@ -231,7 +246,6 @@ endif
 
 .PHONY: weiter
 weiter: compiler $(EXEC) $(GZS) 
-
 
 define setz_gitv
 	 @D=$(1)/.git/config; GITV=$$([ -f $$D ]&&sed -n '/ *url =.*com/{s/.*com\/\([^/]*\).*/\1/p}' $$D);\
@@ -279,6 +293,8 @@ pull:
 ifeq (,$(SRCS))
 else
 anzeig:
+	@if test "$$(./configure nuros)" != "$(OSNR)"; then ./configure;:;echo "$$@";make "$$@";\
+		echo "Die folgende Fehlermeldung gilt nicht/ The following error message is invalid:";false;fi;
 # 'echo -e' geht nicht z.B. in ubuntu
 	@[ "$(DPROG)" ]||{ printf "Datei/File %b'vars'%b fehlerhaft/faulty, bitte vorher/please call %b'./install.sh'%b aufrufen/before!\n" \
 	       $(blau) $(reset) $(blau) $(reset);let 0;}
@@ -332,15 +348,16 @@ $(DEPDIR)/%.d: ;
 ifeq (,$(SRCS))
 else
 compiler:
-	@printf " DISTR: %b%s%b, untersuche/examining Compiler ...\n" $(blau) "$(DName)" $(reset) $(BA)
-	@printf " Untersuche/Examining Compiler ...\n" $(BA)
-	@if test "$(GCCOK)" = "0"; then printf " GCCOK: %b%s%b\n" $(blau) "$(GCCOK)" $(reset); fi;
-	@if test "$(GCCOK)" = "0"; then printf " MINVGCC: %b%s%b\n" $(blau) "$(MINVGCC)" $(reset); fi;
-	@if test "$(GCCOK)" = "0"; then printf " MINGCCNR: %b%s%b\n" $(blau) "$(MINGCCNR)" $(reset); fi;
-	@if test "$(GCCOK)" = "0"; then printf " MAXGCCNR: %b%s%b\n" $(blau) "$(MAXGCCNR)" $(reset); fi;
-	@if test "$(GCCOK)" = "0"; then printf " COMP:   %b%s%b\n" $(blau) "$(COMP)" $(reset); fi;
-	@if test "$(GCCOK)" = "0"; then printf " CCInst: %b%s%b\n" $(blau) "$(CCInst)" $(reset); fi;
-	@printf " CC: %b%s%b\n" $(blau) "$(CC)" $(reset)
+	@printf " DISTR: %b%s%b, untersuche/examining Compiler ..." $(blau) "$(DName)" $(reset) $(BA)
+	@if test "$(GCCOK)" = "0"; then printf "\n"; fi;
+	@if test "$(GCCOK)" = "0"; then printf " GCCOK: \"%b%s%b\"\n" $(blau) "$(GCCOK)" $(reset); fi;
+	@if test "$(GCCOK)" = "0"; then printf " MINVGCC: \"%b%s%b\"\n" $(blau) "$(MINVGCC)" $(reset); fi;
+	@if test "$(GCCOK)" = "0"; then printf " MINGCCNR: \"%b%s%b\"\n" $(blau) "$(MINGCCNR)" $(reset); fi;
+	@if test "$(GCCOK)" = "0"; then printf " MAXGCCNR: \"%b%s%b\"\n" $(blau) "$(MAXGCCNR)" $(reset); fi;
+	@if test "$(GCCOK)" = "0"; then printf " COMP:   \"%b%s%b\"\n" $(blau) "$(COMP)" $(reset); fi;
+	@if test "$(GCCOK)" = "0"; then printf " CCName: \"%b%s%b\"\n" $(blau) "$(CCName)" $(reset); fi;
+	@if test "$(GCCOK)" = "0"; then printf " CCInst: \"%b%s%b\"\n" $(blau) "$(CCInst)" $(reset); fi;
+	@printf " CC: \"%b%s%b\"\n" $(blau) "$(CC)" $(reset)
 ifeq ('$(SPR)','')
 $(warning Variable 'SPR' not assigned, please call './install.sh' before!)
 $(error Variable 'SPR' nicht belegt, bitte vorher './install.sh' aufrufen!)
@@ -406,6 +423,16 @@ $(INSTEXEC): $(EXEC)
 	-@$(SUDC)pkill $(EXEC) $(KF); $(SUDC)pkill -9 $(EXEC) $(KF); $(SUDC)cp -p "$(EXEC)" "$(INSTEXEC)"
 endif
 
+.PHONY: shlist
+shlist:
+	-@L=shliste;Z=/root/bin;\
+		[ -f "$$L" -a -d "$$Z" ]&&\
+		for D in $$(cat $$L);do \
+		  printf "$(SUDC)cp -au \""$$D"\" \""$$Z/"\"\n";\
+			$(SUDC)cp -au "$$D" "$$Z/";\
+			grep -q "$$D" "$(AUNF)"||printf "printf \"Loesche/Deleting $$Z/$$D...\\\\n\";$(SUDC)rm -r $$Z/$$D;hash -r;\n" >>"$(AUNF)";\
+		done;:
+
 man_de.html: LGL::=deutsch
 man_de.gz man_de.html: FKT::=FUNKTIONSWEISE
 man_de.html: AWI::=AUSWIRKUNGEN
@@ -417,7 +444,7 @@ man_en.html: AWI::=IMPLICATIONS
 man_en.gz: OPN::=OPTIONS
 
 .PHONY: install
-install: $(INSTEXEC) $(INSTenMAN) $(INST_MAN) 
+install: $(INSTEXEC) $(INSTenMAN) $(INST_MAN) shlist
 
 README.md: $(HTMLS)
 	-@rm -f README.md
@@ -432,9 +459,9 @@ define machvers
 endef
 
 define priv_html
-	-@printf " erstelle/generating:%b$(1)%b\n" $(blau) $(reset)
+	-@printf " erstelle/generating:%b$(1)%b..." $(blau) $(reset)
 	-@groff -mandoc -Thtml -v $(KR);EXC="$$$$?"; \
-	for p in $(PGROFF); do { [ $$$${EXC} -gt 1 ]|| ! which groff $(KR)|| ! $(SPR) $$$$p $(KR);}&&{ sh configure inst _ $$$$p verbose;}; done; :;
+		bp=$$$$(echo $(PGROFF));for p in $$$$bp;do { [ $$$$EXC -eq 0 ]&&which groff $(KR)&&$(SPR) $$$$p $(KR);}||{ sh configure inst _ $$$$p verbose;};done;:;
 	-@rm -f $(1).html
 	-@sed -e 's/²gitv²/$(GITV)/g;s/²DPROG²/$(DPROG)/g;'\
 	 -e 's/Ä/\&Auml;/g;s/Ö/\&Ouml;/g;s/Ü/\&Uuml;/g;s/ä/\&auml;/g;s/ö/\&ouml;/g;s/ü/\&uuml;/g;s/ß/\&szlig;/g;'\
@@ -508,8 +535,8 @@ uninstall: instclean
 
 .PHONY: allesweg
 allesweg: instclean
-	-@tac $(UNF) >tmp_$(UNROH)&& $(SUDC)blau=$(blau) reset=$(reset) bash tmp_$(UNROH) <<-EOF $'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n'$'\n' EOF;: # uninstallinv von hinten nach vorne abarbeiten
-	-@[ "$(OSNR)" -le 3 ]&&{ $(SUDC)apt-get -f install<<EOF $'\n'$'\n' EOF;};:;
+	-@tac $(UNF) >tmp_$(UNROH)&& $(SUDC)blau=$(blau) reset=$(reset) bash tmp_$(UNROH) <<-EOF $(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n')$(printf '\n') EOF;: # uninstallinv von hinten nach vorne abarbeiten
+	-@[ "$(OSNR)" -le 3 ]&&{ $(SUDC)apt-get -f install<<EOF $(printf '\n')$(printf '\n') EOF;};:;
 	-@printf "Fertig mit uninstall!\n"
 
 #//rufe:
@@ -565,12 +592,13 @@ tumitzieh:
 		[ -n "$$TZL" -a "$$TZL" != . -a "$$TZL" != "$(DPROG)" -a -d "$$TZL" ]&&break;\
 		Fg="Please enter target/ bitte Ziel eingeben z.B.: ";\
 		for a in $$(find .. -mindepth 2 -maxdepth 2 -name kons.cpp|cut -d/ -f2|sort);do Fg=$$Fg$$blau$$a$$reset,;done;\
-		Fg="$$Fg\b: ";printf "$$Fg";[ "$$0" = "dash" ]&&read TZL||read -e -i "$$TZL" TZL;:;\
+    case f in [^f]) obbash=0;;*) obbash=1;esac;\
+		Fg="$$Fg\b: ";printf "$$Fg";[ $$obbash -eq 1 ]&&read -e -i "$$TZL" TZL||read TZL;:;\
 	done;\
 	printf "adapt/ mitziehen von %b$$TZL%b\n" $(blau) $(reset);\
-	printf "cp -au $$blau.exrc Makefile install.sh man_?? viall configure $$reset\"$$TZL\";\n";\
-	cp -au .exrc Makefile install.sh man_?? viall configure "$$TZL";\
-	printf "for A in $${blau}kons.cpp kons.h DB.cpp DB.h efdr.cpp efdr.h tr64.cpp tr64.h$$reset;do [ -f \"$$TZL/\\$A\" -a -f \"\\$A\" ]&&cp -au \"\\$A\" \"$$TZL\";done;\n";\
+	printf "cp -au $$blau.exrc Makefile install.sh viall configure $$reset\"$$TZL\";\n";\
+	cp -au .exrc Makefile install.sh viall configure "$$TZL";\
+	printf "for A in $${blau}kons.cpp kons.h DB.cpp DB.h efdr.cpp efdr.h tr64.cpp tr64.h$$reset;do [ -f \"$$TZL/\$$A\" -a -f \"\$$A\" ]&&cp -au \"\$$A\" \"$$TZL\";done;\n";\
 	cd "$$TZL" $(DN);test -d ".git"&&git commit -m"vor mitzieh" $(KR);cd - $(DN);\
 	for A in kons.cpp kons.h DB.cpp DB.h efdr.cpp efdr.h tr64.cpp tr64.h;do [ -f "$$TZL/$$A" -a -f "$$A" ]&&cp -au "$$A" "$$TZL";done;\
 	cd "$$TZL" $(DN); sh configure; cd - $(DN);
@@ -602,7 +630,8 @@ dotrans:
 		[ -n "$$TZL" -a "$$TZL" != . -a "$$TZL" != "$(DPROG)" ]&&break;\
 		Fg="Please enter target/ bitte Ziel eingeben, nicht: ";\
 		for a in $$(find .. -mindepth 2 -maxdepth 2 -name kons.cpp|cut -d/ -f2|sort);do Fg=$$Fg$$blau$$a$$reset,;done;\
-		Fg="$$Fg\b: ";printf "$$Fg";[ "$$0" = "dash" ]&&read TZL||read -e -i "$$TZL" TZL;:;\
+    case f in [^f]) obbash=0;;*) obbash=1;esac;\
+		Fg="$$Fg\b: ";printf "$$Fg";[ $$obbash -eq 1 ]&&read -e -i "$$TZL" TZL||read TZL;:;\
 	done;\
 	printf "transfer to/ Transfer nach %b$$TZL%b\n" $(blau) $(reset);\
 	Start=1;\
@@ -658,7 +687,8 @@ tuneuproj:
 		[ -n "$$TZL" -a "$$TZL" != . -a "$$TZL" != "$(DPROG)" -a ! -d "../$$TZL" ]&&break;\
 		Fg="Programmname/program name, nicht: ";\
 		for a in $$(find .. -mindepth 2 -maxdepth 2 -name kons.cpp|cut -d/ -f2|sort);do Fg=$$Fg$$blau$$a$$reset,;done;\
-		Fg="$$Fg\b: ";printf "$$Fg";[ "$$0" = "dash" ]&&read TZL||read -e -i "$$TZL" TZL;:;\
+    case f in [^f]) obbash=0;;*) obbash=1;esac;\
+		Fg="$$Fg\b: ";printf "$$Fg";[ $$obbash -eq 1 ]&&read -e -i "$$TZL" TZL||read TZL;:;\
 	done;\
 	echo -e "erstelle $$blau$$TZL$$reset";\
 	mkdir -p ../"$$TZL";cp -ai kons.cpp kons.h DB.cpp DB.h Makefile .exrc configure install.sh man_?? viall* ../"$$TZL";\
@@ -676,5 +706,12 @@ tuneuproj:
 	sed -i.bak '/\$DTN [^'\'']/s/\$DTN /\$DTN +'\''tabfirst|tab sview ..\/$(DPROG)\/$(DPROG).cpp|tabnext|tab sview ..\/$(DPROG)\/$(DPROG).h|tabfirst'\'' /' viall;\
 	sh viall;\
 	echo Weiter mit/Go on with: \"cd ../"$$TZL"\" $(DN);
+
+.PHONY: mausgeb
+mausgeb:
+	@echo MAXGCCNR: $(MAXGCCNR)
+	@echo MINGCCNR: $(MINGCCNR)
+	@echo OSNR: $(OSNR)
+	@echo MINVGCC: $(MINVGCC)
 
 -include $(patsubst %,$(DEPDIR)/%.d,$(basename $(SRCS)))
