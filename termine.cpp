@@ -276,11 +276,11 @@ void hhcl::pvirtfuehraus() //α
 					tzeit.tm_year-=1900;
 					if (tzeit.tm_year <0) {
 						if (!(/*!strlen(pids.c_str())&&*/tzeit.tm_year==-1900))
-							cout<<"lfdnr: '"<<lfd<<"', pids: '"<<pids<<"', wota: "<<wota<<", D: "<<tzeit.tm_mday<<"."<<tzeit.tm_mon<<"."<<tzeit.tm_year<<" "<<tzeit.tm_hour<<":"<<tzeit.tm_min<<", name: "<<name<<", gebdat: "<<gebdat<<", raum: "<<raum<<", zusatz: "<<zusatz<<endl;
+							cout<<"lfdnr: '"<<lfd<<"', pids: '"<<pids<<"', wota: "<<wota<<", D: "<<blau<<put_time(&tzeit,"%Y-%m-%d %H:%M:%S")<<schwarz<<", name: "<<name<<", gebdat: "<<gebdat<<", raum: "<<raum<<", zusatz: "<<zusatz<<endl;
 						//			  cout<<lfdnr.length()<<" "<<lfdnr.find_first_not_of(" 0123456789\0")<<" "<<lfdnr.find_first_not_of("0123456789")<<"Jahresfehler;\n";
 					} else if (1) {
 						if (obverb) {
-							 cout<<"lfdnr: '"<<lfd<<"', pids: '"<<pids<<"', wota: "<<wota<<", D: "<<tzeit.tm_mday<<"."<<tzeit.tm_mon<<"."<<tzeit.tm_year<<" "<<tzeit.tm_hour<<":"<<tzeit.tm_min<<", name: "<<name<<", gebdat: "<<gebdat<<", raum: "<<raum<<", zusatz: "<<zusatz<<endl;
+							 cout<<"lfdnr: '"<<blau<<lfd<<schwarz<<"', pids: '"<<blau<<pids<<schwarz<<"', wota: "<<blau<<wota<<schwarz<<", D: "<<blau<<put_time(&tzeit,"%Y-%m-%d %H:%M:%S")<<schwarz<<", name: "<<blau<<name<<schwarz<<", gebdat: "<<blau<<gebdat<<schwarz<<", raum: "<<blau<<raum<<schwarz<<", zusatz: "<<blau<<zusatz<<schwarz<<endl;
 						}
 						string at1(asctime(&tzeit));
 						at1 = at1.substr(0,at1.length()-1);
