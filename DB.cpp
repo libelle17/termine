@@ -172,7 +172,6 @@ const char *DB_T[T_dbMAX+1][SprachZahl]={
 // class Txdbcl Txd;
 // class TxB Txd(DB_T);
 class TxB Txd((const char* const* const* const*)DB_T);
-const string& pwk = "4893019320jfdksalö590ßs89d0qÃ9m0943Ã09Ãax"; // fuer Antlitzaenderung
 
 #ifdef mitpostgres 
 const DBSTyp myDBS=Postgres;
@@ -267,7 +266,7 @@ Feld::Feld(const string& name, string typ/*=string()*/, const string& lenge/*=st
 	}
 } // Feld(const string& name, const string& typ, const string& lenge, const string& prec, string comment, bool vind, bool vobauto, bool vnnull, string vdefa):
 
-// Feld::Feld(Feld const& copy) { }
+// Feld::Feld
 
 
 Index::Index(const string& name, Feld *const vfelder, const unsigned feldzahl, const uchar unique/*=0*/):
@@ -454,7 +453,7 @@ void DB::init(
 										obverb,oblog,&zincldir,/*obsudc=*/1); 
 								for(auto const& aktdir:zincldir) {
 									svec zzruck2;
-									systemrueck("find "+aktdir+" -not -type d",obverb,oblog,&zzruck2,/*obsudc=*/1); // auch links
+									systemrueck("find "+aktdir+" -not -type d -name '*.cnf'",obverb,oblog,&zzruck2,/*obsudc=*/1); // auch links
 									for(auto const& aktzz2:zzruck2) {
 										myconfpfad<<aktzz2;
 									}
@@ -1794,10 +1793,9 @@ void RS::setzzruck()
 // fuer obverb gibt es die Stufen: -2 (zeige auch bei Fehlern nichts an), -1 (zeige SQL an), 0, 1
 int RS::doAbfrage(const size_t aktc/*=0*/,int obverb/*=0*/,uchar asy/*=0*/,int oblog/*=0*/,string *idp/*=0*/,my_ulonglong *arowsp/*=0*/)
 {
-	int altobverb=obverb;
+////	int altobverb=obverb; obverb=1;
 	const unsigned vlz=10; // Verlängerungszahl
 	const unsigned maxversuche=3;
-//	obverb=1;
 	yLog(obverb>0?obverb-1:0,oblog,0,0,"%s%s()%s, aktc: %s%zu%s, obverb: %s%d%s, asy: %s%d%s, oblog: %s%d%s,\nsql: %s%s%s",blau,__FUNCTION__,schwarz,blau,aktc,schwarz,blau, obverb,schwarz,blau,asy,schwarz,blau,oblog,schwarz,blau,sql.c_str(),schwarz);
 	fnr=0;
 	int obfalsch{0};
@@ -1968,7 +1966,7 @@ int RS::doAbfrage(const size_t aktc/*=0*/,int obverb/*=0*/,uchar asy/*=0*/,int o
 #endif // mitpostgres
 			break;
 	} // 	switch (db->DBS)
-	obverb=altobverb;
+////	obverb=altobverb;
 	return (int)obqueryfehler;
 } // RS::doAbfrage
 
