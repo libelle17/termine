@@ -125,25 +125,14 @@ void hhcl::neurf()
 {
 	for(auto omit=opn.schl.end();omit!=opn.schl.begin();) {
 		omit--;
-		if ((*omit)->Txrf!=-1) {
-		 const char* const text=(*(*omit)->TxBp)[(*omit)->Txrf];
-		cout<<text<<endl;
+		if (!(*omit)->Txtrf.empty()) {
+			const char* const text=(*omit)->Txtrf.c_str();
+			cout<<text<<endl;
 		}
 	}
-}
+} // void hhcl::neurf
+ //ω
 
-// wird aufgerufen in lauf
-void hhcl::virtrueckfragen()
-{
-	hLog(violetts+Tx[T_virtrueckfragen]+schwarz);
-	if (rzf) { //ω
-	} // if (rzf) //α
-	dhcl::virtrueckfragen();
-	hcl::virtrueckfragen();
-	//// opn.oausgeb(rot);
-} // void hhcl::virtrueckfragen()
-//ω
-//α
 // wird aufgerufen in lauf
 void hhcl::virtpruefweiteres()
 {
@@ -190,10 +179,10 @@ void hhcl::anhalten()
 } // void hhcl::anhalten() //α
 //ω
 //α
-void hhcl::pvirtvorpruefggfmehrfach()
+void hhcl::pvirtnachrueckfragen()
 {
 	// if (initDB()) exit(schluss(10,Tx[T_Datenbank_nicht_initialisierbar_breche_ab]));  //ω
-} // void hhcl::pvirtvorpruefggfmehrfach //α
+} // void hhcl::pvirtnachrueckfragen //α
 //ω
 void hhcl::pvirtfuehraus() //α
 { 
