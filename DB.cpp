@@ -169,9 +169,9 @@ const char *DB_T[T_dbMAX+1][SprachZahl]={
 	{"",""}
 };
 // Txdbcl::Txdbcl() {TCp=(const char* const * const * const *)&TextC;}
-// class Txdbcl Txd;
-// class TxB Txd(DB_T);
-class TxB Txd((const char* const* const* const*)DB_T);
+// struct Txdbcl Txd;
+// struct TxB Txd(DB_T);
+struct TxB Txd((const char* const* const* const*)DB_T);
 
 #ifdef mitpostgres 
 const DBSTyp myDBS=Postgres;
@@ -496,6 +496,7 @@ void DB::init(
 			} // if (!oisok)
 #endif // linux
 			conn=new MYSQL*[conz];
+			for(size_t aktc=0;aktc<conz;aktc++) conn[aktc]=0;
 			this->ConnError=NULL;
 			for(size_t aktc=0;aktc<conz;aktc++) {
 				conn[aktc] = mysql_init(NULL);
@@ -809,19 +810,19 @@ void DB::setzrpw(int obverb/*=0*/,int oblog/*=0*/) // Setze root-password
 
 DB::~DB(void)
 {
-if (0) {
+if (1) {
 	switch (DBS) {
 		case MySQL:
 			if (!this->ConnError) {
 				if (!lassoffen) {
 					for(size_t aktc=0;aktc<conz;aktc++) {
-						mysql_close(conn[aktc]);
+						if (conn[aktc]) {
+							mysql_close(conn[aktc]);
+							conn[aktc]=0;
+						}
 					}
 				} // 				if (!lassoffen)
 			} // 			if (!this->ConnError)
-			for(size_t aktc=0;aktc<conz;aktc++) {
-				conn[aktc]=0;
-			}
 			break;
 		case Postgres:
 			caup<<"hier ~DB"<<endl;
@@ -1278,8 +1279,9 @@ uchar DB::tuerweitern(const string& tabs, const string& feld,long wlength,const 
           fLog(Txd[T_Erweitere_Feld]+tabs+"."+feld+Txd[T_von]+lenge.c_str()+Txd[T_auf]+ltoan(wlength),1,1);
           korr.str(std::string()); korr.clear();
           if (*(*cerg+1) && *(*cerg+2)) {
+						const string defa(ersetzAllezu(cjj(cerg,3),"'","\\'"));
             korr<<"ALTER TABLE `"<<tabs<<"` MODIFY COLUMN `"<<feld<<"` "<<*(*cerg+1)/*data_type*/<<"("<<wlength<<") "<<
-              (!strcasecmp(*(*cerg+2),"yes")?"NULL":"NOT NULL")<<" "<<(cjj(cerg,3)?string("DEFAULT '")+cjj(cerg,3)+"'":"")<<
+              (!strcasecmp(*(*cerg+2),"yes")?"NULL":"NOT NULL")<<" "<<(cjj(cerg,3)?string("DEFAULT '")+defa+"'":"")<<
               " COMMENT '"<<ersetzAllezu(cjj(cerg,4),"'","\\'")<<"'";
             RS spaltaend(this,korr.str(),aktc,obverb);
             if (spaltaend.fnr==1074) {
@@ -1298,7 +1300,7 @@ uchar DB::tuerweitern(const string& tabs, const string& feld,long wlength,const 
               if (!neufeld.empty()) {
                 fLog(Txd[T_Aendere_Feld]+tabs+"."+feld+" von: "+*(*cerg+1)+" auf: "+neufeld,1,1);
                 korr<<"ALTER TABLE `"<<tabs<<"` MODIFY COLUMN `"<<feld<<"` "<<neufeld/*data_type*/<<" "<<
-                  (!strcasecmp(*(*cerg+2),"yes")?"NULL":"NOT NULL")<<" "<<(cjj(cerg,3)?string("DEFAULT '")+cjj(cerg,3)+"'":"")<<
+                  (!strcasecmp(*(*cerg+2),"yes")?"NULL":"NOT NULL")<<" "<<(cjj(cerg,3)?string("DEFAULT '")+defa+"'":"")<<
                   " COMMENT '"<<ersetzAllezu(cjj(cerg,4),"'","\\'")<<"'";
                 RS spaltaend2(this,korr.str(),aktc,obverb);
               }
@@ -2476,7 +2478,7 @@ void dhcl::virtlgnzuw()
 int dhcl::initDB()
 {
 	hLog(violetts+"initDB(), db: "+blau+dbq+schwarz);
-	unsigned int fehler=0;
+	unsigned int fehler{0};
 	if (dbq.empty()) {
 		fehler=1046;
 	} else {
@@ -2486,7 +2488,7 @@ int dhcl::initDB()
 				delete My;
 				My=0;
 			} else {
-				My->lassoffen=1;
+//				My->lassoffen=1;
 			} // 			if (My->ConnError) else
 		} // 		if (!My)
 		fehler=My->fehnr;
@@ -2510,7 +2512,7 @@ int dhcl::pruefDB(const string& db)
 			delete My;
 			My=0;
 		}else {
-			My->lassoffen=1;
+//			My->lassoffen=1;
 		}
 	} // 	if (!My)
 	return (fehnr); 
@@ -2518,6 +2520,7 @@ int dhcl::pruefDB(const string& db)
 
 dhcl::~dhcl()
 {
+	if (My) delete My;
 } // dhcl::~dhcl
 
 // wird aufgerufen in lauf

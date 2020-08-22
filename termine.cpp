@@ -7,6 +7,7 @@ const double& versnr= //α
 #include <tiffio.h>
 #define VOMHAUPTCODE // um Funktionsdefinition manchmal mit "__attribute__((weak)) " versehen zu können //ω
 #include "termine.h"
+#include <list>
 // fuer verschiedene Sprachen //α
 char const *DPROG_T[T_MAX+1][SprachZahl]={
 	// T_virtVorgbAllg
@@ -49,6 +50,16 @@ char const *DPROG_T[T_MAX+1][SprachZahl]={
 	{"pvirtfuehraus()","pvirtexecute()"},
 	// T_Fuege_ein
 	{"Fuege ein: ","Inserting: "}, //ω
+	// T_Kann_Termindatei,
+	{"Kann Termindatei '","Cannot open file '"},
+	// T_lstat_fehlgeschlagen,
+	{"lstat fehlgeschlagen: ","lstat failed: "},
+	// T_bei_Datei,
+	{" bei Datei: "," for file: "},
+	// T_einzulesen
+	{"einzulesen: ","to load up: "},
+	// T_Zeit_von
+	{"Zeit von ","Time of "},
 	{"",""} //α
 }; // char const *DPROG_T[T_MAX+1][SprachZahl]=
 
@@ -77,6 +88,7 @@ void hhcl::pvirtVorgbSpeziell()
 	hLog(violetts+Tx[T_pvirtVorgbSpeziell]+schwarz);
 	virtMusterVorgb(); //ω
 	dhcl::pvirtVorgbSpeziell(); //α
+	hLog(violetts+Txk[T_Ende]+Tx[T_pvirtVorgbSpeziell]+schwarz);
 } // void hhcl::pvirtVorgbSpeziell
 
 // wird aufgerufen in lauf
@@ -100,6 +112,7 @@ void hhcl::virtMusterVorgb()
 {
 	hLog(violetts+Tx[T_virtMusterVorgb]+schwarz); //ω
 	dhcl::virtMusterVorgb(); //α
+	hLog(violetts+Txk[T_Ende]+Tx[T_virtMusterVorgb]+schwarz); //ω
 } // void hhcl::MusterVorgb
 
 // wird aufgerufen in lauf
@@ -143,7 +156,7 @@ void hhcl::virtpruefweiteres()
 		if (initDB()) {
 			exit(schluss(10,Tx[T_Datenbank_nicht_initialisierbar_breche_ab]));
 		}
-		const string sql{"create table if not exists `"+tbtab+"`(id int(10) auto_increment key, pid int(10) comment 'Pat_Id aus namen',zp datetime comment 'Terminzeitpunkt', zusatz varchar(400) comment 'Beschreibung und Eintragender', abgerufen datetime comment 'Zeitpunkt der Dateiänderung TMFTools', `gebdat` DATETIME COMMENT 'in Klammern angegebenes Geburtsdatum', aktzeit datetime comment 'Zeitpunkt der aktualisierung', key zp (zp), key aktzeit(aktzeit),key pid (pid)) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_german2_ci ROW_FORMAT=DYNAMIC"}; //   , CONSTRAINT `pid_rel` FOREIGN KEY (`pid`) REFERENCES `namen` (`pat_id`) ON DELETE CASCADE ON UPDATE CASCADE
+		const string sql{"CREATE TABLE IF NOT EXISTS `"+tbtab+"`(id int(10) auto_increment key, pid int(10) comment 'Pat_Id aus namen',zp datetime comment 'Terminzeitpunkt', zusatz varchar(400) comment 'Beschreibung und Eintragender', abgerufen datetime comment 'UTC-Zeitpunkt der Dateiänderung TMFTools', `gebdat` DATETIME COMMENT 'in Klammern angegebenes Geburtsdatum', aktzeit datetime comment 'Zeitpunkt der aktualisierung', key zp (zp), key aktzeit(aktzeit),key pid (pid)) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_german2_ci ROW_FORMAT=DYNAMIC"}; //   , CONSTRAINT `pid_rel` FOREIGN KEY (`pid`) REFERENCES `namen` (`pat_id`) ON DELETE CASCADE ON UPDATE CASCADE
 
 	RS rprueftm(My,tbtab);
 	rprueftm.Abfrage(sql,aktc,obverb);
@@ -156,7 +169,8 @@ void hhcl::virtpruefweiteres()
 void hhcl::virtzeigueberschrift()
 { //ω
 	// hier ggf. noch etwas an 'uebers' anhaengen //α
-	hcl::virtzeigueberschrift();
+	if (obverb) 
+		hcl::virtzeigueberschrift();
 } // void hhcl::virtzeigueberschrift
 //ω
 //α
@@ -184,6 +198,7 @@ void hhcl::pvirtnachrueckfragen()
 	// if (initDB()) exit(schluss(10,Tx[T_Datenbank_nicht_initialisierbar_breche_ab]));  //ω
 } // void hhcl::pvirtnachrueckfragen //α
 //ω
+
 void hhcl::pvirtfuehraus() //α
 { 
 	hLog(violetts+Tx[T_pvirtfuehraus]+schwarz); //ω
@@ -191,94 +206,122 @@ void hhcl::pvirtfuehraus() //α
 	gethostname(cpt, cptlen);
 	const string pdfzt{"test -f '"+datei+"' -a ! '"+datei+"' -ot '"+quelldat+"'||pdftotext -layout '"+quelldat+"' '"+datei+"'"}; //pdfzutext
 	systemrueck(pdfzt.c_str(),obverb,oblog);
-	struct stat s1;
-	if (obverb) caus<<"datei: "<<datei<<endl;
+	struct stat s1{};
+	if (obverb) cout<<Txk[T_datei]<<blau<<datei<<schwarz<<endl;
 	if (lstat(datei.c_str(),&s1)) {
-		fLog(string("lstat fehlgeschlagen: ") + strerror(errno) + " bei Datei:"+drot+datei+schwarz,1,1);
+		fLog(string(Tx[T_lstat_fehlgeschlagen]) + strerror(errno) + Tx[T_bei_Datei]+drot+datei+schwarz,1,1);
 		return;
-	}
+	} // 	if (lstat(datei.c_str(),&s1))
 	int einzulesen{0};
 	struct tm ta{0}; // abgerufen
-	memcpy(&ta,localtime(&s1.st_mtime),sizeof ta);
+	memcpy(&ta,gmtime(&s1.st_mtime),sizeof ta); // hierbei Umwandlung in UTC
 	char ***cerg;
-	RS aktzmax(My,"SELECT max(abgerufen) FROM `"+tbtab+"`",aktc,ZDB);
+	RS aktzmax(My,"SELECT MAX(abgerufen) FROM `"+tbtab+"`",aktc,ZDB); // dort als UTC gespeichert
 	if (cerg=aktzmax.HolZeile(),cerg?*cerg:0) {
-		if (obverb) caus<<"max(abgerufen) from "<<tbtab<<": "<<cjj(cerg,0)<<endl;
-		char buf[100];
-		strftime(buf, sizeof(buf), "%Y-%m-%d %T", &ta);
-		if (obverb) caus<<"abgerufen: "<<buf<<endl;
-    struct tm tmj{0};
+		struct tm tmj{0};
 		strptime(cjj(cerg,0),"%Y-%m-%d %T",&tmj);
-		if (obverb) caus<<"max(abgerufen) from "<<tbtab<<": "<<mktime(&tmj)<<endl;
-		if (obverb) caus<<"abgerufen: "<<s1.st_mtime<<endl;
-		if (mktime(&tmj)<s1.st_mtime) einzulesen=1;
-  } else {
+		time_t mktmj{mktime(&tmj)};
+		if (obverb) cout<<"MAX(abgerufen) FROM "<<tbtab<<": "<<blau<<cjj(cerg,0)<<schwarz<<" = "<<blau<<mktmj<<schwarz<<endl;
+		char buf[100];
+		strftime(buf, sizeof(buf), "%Y-%m-%d %T (%z; %Z)", &ta);
+		time_t tta{mktime(&ta)};
+		if (obverb) cout<<Tx[T_Zeit_von]<<drot<<datei<<schwarz<<": "<<blau<<buf<<schwarz<<" (UTC)"<<" = "<<blau<<tta<<schwarz<<endl;
+		if (mktmj<tta) einzulesen=1; // ta und tta sind UTC, s1.st_mtime nicht
+		if (obverb) cout<<"=> "<<Tx[T_einzulesen]<<blau<<einzulesen<<schwarz<<endl;
+	} else {
 		einzulesen=1;
-	}
+	} // 	if (cerg=aktzmax.HolZeile(),cerg?*cerg:0) else
 
 	if (einzulesen) {
 		FILE* const infile{fopen(datei.c_str(),"r")};
 		if (!infile) {
-			perror((string("\nKann Termindatei '")+datei+"' nicht zum Lesen öffnen.").c_str());
+			perror((string("\n")+Tx[T_Kann_Termindatei]+datei+Txk[T_nicht_zum_Lesen_oeffnen]).c_str());
 			return;
-		}
+		} // 		if (!infile)
 		RS start(My,"START TRANSACTION",aktc,ZDB);
 		char Zeile[256];
-		//	int anzufangen=1;
 		vector<instyp> einf;
-		int munu{-1};
+		//		list<string> zn{};
+		struct uebt {
+			string name;
+			size_t p{0};
+			size_t anf{0},len{0};
+		} ue, uea[]{{"Nr."},{"PNr."},{"Tag"},{"Datum"},{"Uhr"},{"Patient"},{"Terminart"},{"Zusatz"}};
+		uchar uefertig{0};
+		//		size_t max{0};
 		while (fgets(Zeile, sizeof Zeile, infile)) {
-			string lfdnr(Zeile+6,8), restl(Zeile+14);
-			if (isnumeric(lfdnr)){
+			string szn{Zeile};
+			if (szn.find_first_not_of(" \r\n\f\t\v=")!=string::npos && (szn.find("Seite")==string::npos || szn.find(" vom ")==string::npos)) {
+				if (obverb>1) cout<<":>"<<szn<<endl;
 				char /*lfd[10],pids[11],*/wota[11],name[100],gebdat[21]/*,raum[21],zusatz[300]*/;
 				/* *raum=0, *zusatz=0,*pids=0; */ 
 				string lfd(10,0),pids(11,0),raum(21,0),zusatz(300,0);
-				struct tm tzeit {0};
-				// \0 geht auf Linux nicht!
-				const char* const mu[]{
-					//				"%10[^\1]%10[^\1]%2d.%2d.%4d%2d:%2d %[^\\]\\(%[^\\]\\%s %[^\1]",
-					"%10[^\1]%10s%3s%2d.%2d.%4d%2d:%2d %35[^\\(](%10[^\\)])%10s%[^\1]",
-				};
-				int serg;
-				for(size_t aktmunu=0;aktmunu<sizeof mu/sizeof *mu;aktmunu++) {
-					if (munu!=-1) aktmunu=munu;
-					serg=sscanf(Zeile,mu[aktmunu],&lfd[0],&pids[0],wota,&tzeit.tm_mday,&tzeit.tm_mon,&tzeit.tm_year,&tzeit.tm_hour,&tzeit.tm_min,
-							name,gebdat,&raum[0],&zusatz[0]);
-					if (serg>10) munu=aktmunu;
-					if (munu!=-1) break;
-				}
-				//			if (obverb) caus<<"serg: "<<rot<<serg<<schwarz<<endl;
-				// trim(pids); 
-				for (int nd=0,i=pids.length();i;i--) {
-					if (!pids[i]) nd=1; 
-					else if (nd && pids[i]!=32) break;
-					pids[i]=0;
-				}
-				gtrim(&restl);
-				if (!serg) {
-					cout<<strerror(errno)<<endl;
-					cout<<restl<<endl<<"pids: "<<pids<<", Fehler bim Split von:"<<lfdnr<<endl;
-					//		  wait();
-					return;
-				} else {
-					tzeit.tm_mon--;
-					tzeit.tm_year-=1900;
-					if (tzeit.tm_year <0) {
-						if (!(/*!strlen(pids.c_str())&&*/tzeit.tm_year==-1900))
-							cout<<"lfdnr: '"<<lfd<<"', pids: '"<<pids<<"', wota: "<<wota<<", D: "<<blau<<put_time(&tzeit,"%Y-%m-%d %H:%M:%S")<<schwarz<<", name: "<<name<<", gebdat: "<<gebdat<<", raum: "<<raum<<", zusatz: "<<zusatz<<endl;
-						//			  cout<<lfdnr.length()<<" "<<lfdnr.find_first_not_of(" 0123456789\0")<<" "<<lfdnr.find_first_not_of("0123456789")<<"Jahresfehler;\n";
-					} else if (1) {
+				struct tm tzeit{0};
+				if (szn.find("Terminart")!=string::npos && szn.find("Datum")!=string::npos) {
+					if (!uefertig) {
+						uefertig=1;
+						uchar lbuch{0};
+						for(size_t pos=0;pos<szn.length();pos++) {
+							if ((szn[pos]==' '||pos==szn.length()-1) && lbuch) {
+								for(size_t uep=0;uep<sizeof uea/sizeof *uea;uep++) {
+									if (uea[uep].name.find(ue.name.substr(0,2))==0) {
+										uea[uep].p=ue.p;
+										break;
+									} // 									if (uea[uep].name.find(ue.name.substr(0,2))==0)
+								} // 								for(size_t uep=0;uep<sizeof uea/sizeof *uea;uep++)
+								lbuch=0;
+								ue.name.clear();
+							} else if (szn[pos]!=' ') {
+								if (!lbuch) {
+									ue.p=pos;
+									lbuch=1;
+								} // 								if (!lbuch)
+								ue.name+=szn[pos];
+							} // if ((szn[pos] ...
+						} // 				for(size_t pos=0;pos<szn.length();pos++)
+						for(size_t vnr=0;vnr<sizeof uea/sizeof *uea;vnr++) {
+							if (uea[vnr].p) {
+								if ((vnr && uea[vnr-1].p)||!vnr) uea[vnr].anf=uea[vnr].p-1;
+								if (vnr<sizeof uea/sizeof *uea-1) {
+									if (uea[vnr+1].p) uea[vnr].len=uea[vnr+1].p-uea[vnr].anf-1; 
+								} 
+								if (!uea[vnr].len) uea[vnr].len=(size_t)-1;
+							} // 					if (uea[vnr].p)
+						} // 				for(size_t vnr=0;vnr<sizeof uea/sizeof *uea;vnr++)
 						if (obverb) {
-							 cout<<"lfdnr: '"<<blau<<lfd<<schwarz<<"', pids: '"<<blau<<pids<<schwarz<<"', wota: "<<blau<<wota<<schwarz<<", D: "<<blau<<put_time(&tzeit,"%Y-%m-%d %H:%M:%S")<<schwarz<<", name: "<<blau<<name<<schwarz<<", gebdat: "<<blau<<gebdat<<schwarz<<", raum: "<<blau<<raum<<schwarz<<", zusatz: "<<blau<<zusatz<<schwarz<<endl;
+							for(size_t vnr=0;vnr<sizeof uea/sizeof *uea;vnr++) {
+								cout<<blau<<uea[vnr].p<<" "<<gruen<<uea[vnr].name<<schwarz<<" "<<uea[vnr].anf<<" "<<uea[vnr].len<<endl;
+							} // 						for(size_t vnr=0;vnr<sizeof uea/sizeof *uea;vnr++)
 						}
+					} // 				if (!uefertig)
+				} else {
+					for(size_t vnr=0;vnr<sizeof uea/sizeof *uea;vnr++) {
+						if ((uea[vnr].anf || uea[vnr].len) && uea[vnr].anf<szn.size()) {
+							switch (vnr) {
+								case 0: sscanf(szn.substr(uea[vnr].anf,uea[vnr].len).c_str(),"%[^\1]",&lfd[0]); break;
+								case 1: sscanf(szn.substr(uea[vnr].anf,uea[vnr].len).c_str(),"%s",&pids[0]); break;
+								case 2: sscanf(szn.substr(uea[vnr].anf,uea[vnr].len).c_str(),"%s",&wota[0]); break;
+								case 3: sscanf(szn.substr(uea[vnr].anf,uea[vnr].len).c_str(),"%2d.%2d.%d",&tzeit.tm_mday,&tzeit.tm_mon,&tzeit.tm_year); break;
+								case 4: sscanf(szn.substr(uea[vnr].anf,uea[vnr].len).c_str(),"%2d:%2d",&tzeit.tm_hour,&tzeit.tm_min); break;
+								case 5: sscanf(szn.substr(uea[vnr].anf,uea[vnr].len).c_str(),"%[^\\(](%10[^\\)]",name,gebdat); break;
+								case 6: sscanf(szn.substr(uea[vnr].anf,uea[vnr].len).c_str(),"%s",&raum[0]); break;
+								case 7: sscanf(szn.substr(uea[vnr].anf,uea[vnr].len).c_str(),"%[^\1]",&zusatz[0]); break;
+							} // 						switch (vnr) 
+						} // 					if ((uea[vnr].anf || uea[vnr].len) && uea[vnr].anf<szn.size())
+					} // 				for(size_t vnr=0;vnr<sizeof uea/sizeof *uea;vnr++)
+					if (tzeit.tm_year>2000) {
+						tzeit.tm_mon--;
+						tzeit.tm_year-=1900;
+						if (obverb>1) {
+							cout<<"lfdnr: '"<<blau<<lfd<<schwarz<<"', pids: '"<<blau<<pids<<schwarz<<"', wota: "<<blau<<wota<<schwarz<<", D: "<<blau<<put_time(&tzeit,"%Y-%m-%d %H:%M:%S")<<schwarz<<", name: "<<blau<<name<<schwarz<<", gebdat: "<<blau<<gebdat<<schwarz<<", raum: "<<blau<<raum<<schwarz<<", zusatz: "<<blau<<zusatz<<schwarz<<endl;
+						} // 						if (obverb)
 						string at1(asctime(&tzeit));
 						at1 = at1.substr(0,at1.length()-1);
 						if (isnumeric(pids.c_str())) {
-//							char buf[1000]{0};
-//							memset(buf,0,sizeof buf);
+							//							char buf[1000]{0};
+							//							memset(buf,0,sizeof buf);
 							time_t t{time(0)};
-							struct tm *ts;
-							ts = localtime(&t);
+							struct tm *ts{gmtime(&t)};
 							//caus<<"raum: '"<<raum<<"', gtrim(&raum): '"<<*gtrim(&raum)<<"', sqlft: '"<<sqlft(MySQL,gtrim(&raum))<<"'\n";
 							//caus<<"zusatz: '"<<zusatz<<"', gtrim(&zusatz): '"<<*gtrim(&zusatz)<<"', sqlft: '"<<sqlft(MySQL,gtrim(&zusatz))<<"'\n";
 							RS loe(My,"DELETE FROM `"+tbtab+"` WHERE zp="+sqlft(MySQL,&tzeit)+" AND raum="+sqlft(MySQL,raum)+" AND pid="+sqlft(MySQL,pids),aktc,ZDB);
@@ -295,21 +338,19 @@ void hhcl::pvirtfuehraus() //α
 							einf.push_back(instyp(My->DBS,"gebdat",&gtm));
 							rins.tbins(&einf,aktc,/*sammeln=*/0,/*obverb=*/ZDB,/*idp=*/0,/*eindeutig=*/0); 
 							if (rins.fnr) {
-								fLog(Tx[T_Fehler_af]+drots+ltoan(rins.fnr)+schwarz+Txk[T_bei]+tuerkis+rins.sql+schwarz+": "+blau+rins.fehler+schwarz,1,1);
+								fLog(Txd[T_Fehler_af]+drots+ltoan(rins.fnr)+schwarz+Txk[T_bei]+tuerkis+rins.sql+schwarz+": "+blau+rins.fehler+schwarz,1,1);
 							} //         if (runde==1)
-							//							anzufangen=0;
 						} // if (isnumeric(pids)) 
-					} // if (tzeit.tm_year <0) else
-				} // if (!serg) else 
-			} // if (isnumeric(lfdnr))
-		} // while (fgets(Zeile, sizeof Zeile, infile))
-		einf.clear();
-		RS rins(My,tbtab); 
-		rins.tbins(&einf,aktc,ZDB,0,0);
+					} // 					if (tzeit.tm_year>2000)
+				} // 			if (szn.find("Terminart")!=string::npos)
+				//				if (++max>100) break;
+				//				zn.push_back(szn);
+			} // if (szn.find_first_not_of(' ')!=string::npos)
+		} // 		while (fgets(Zeile, sizeof Zeile, infile))
 		RS commit(My,"COMMIT",aktc,ZDB);
 		// My.insert(einf,&fehler,0,0);
 		fclose(infile);
-	}
+	} // 	if (einzulesen)
 	// wait();
 } // void hhcl::pvirtfuehraus  //α
 

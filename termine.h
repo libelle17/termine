@@ -22,6 +22,11 @@ enum T_
 	T_Datenbank_nicht_initialisierbar_breche_ab,
 	T_pvirtfuehraus,
 	T_Fuege_ein, //ω
+	T_Kann_Termindatei,
+	T_lstat_fehlgeschlagen,
+	T_bei_Datei,
+	T_einzulesen,
+	T_Zeit_von,
 	T_MAX //α
 }; // enum T_ //ω
 //α
