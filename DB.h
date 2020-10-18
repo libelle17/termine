@@ -262,9 +262,12 @@ struct Feld
     bool nnull;
     string defa;
 		bool unsig;
+		string chset;
+		string coll;
 		Feld();
     Feld(const string& name, string typ=string(), const string& lenge=string(), const string& prec=string(), 
-         const string& comment=string(), bool obind=0, bool obauto=0, bool nnull=0, const string& defa=string(), bool unsig=0);
+     const string& comment=string(), bool obind=0, bool obauto=0, bool nnull=0, const string& defa=string(), 
+		 bool unsig=0,const string& chset=string(), const string& coll=string());
 //		Feld(Feld const& copy);
 		// um im Konstruktor von Tabelle aus einem Feld-vector ein Feld-Array machen zu koennen
 		Feld& operator=(const Feld* fur);
@@ -358,7 +361,7 @@ struct DB
 	void prueffunc(const string& pname, const string& body, const string& para, const size_t aktc, int obverb, int oblog);
 	vector< vector<instyp> > ins;
 	void erweitern(const string& tab, vector<instyp> einf,const size_t aktc,int obverb,uchar obsammeln=0, const unsigned long *maxl=0) const;
-	uchar tuerweitern(const string& tab, const string& feld,unsigned long wlength,const size_t aktc,int obverb) const;
+	uchar tuerweitern(const string& tab, const string& feld,long wlength,const size_t aktc,int obverb) const;
 	int machbinaer(const string& tabs, const size_t aktc, const string& fmeld,int obverb) const;
 	////	DB(DBSTyp DBS, const char* host, const char* user,const char* passwd, const char* db, unsigned int port, const char *unix_socket, unsigned long client_flag);
 	///*1*/DB();
@@ -562,7 +565,7 @@ struct dhcl:public hcl
 		dhcl(const int argc, const char *const *const argv,const char* const DPROG,const uchar mitcron);
 		~dhcl();
 		int  initDB();
-		int  pruefDB(DB** testMy, const string& db);
+		int  pruefDB(const string& db);
 #ifdef VOMHAUPTCODE
 		__attribute__((weak)) // implementationsspezifische Vorgaben, Modul vgb.cpp)
 #endif

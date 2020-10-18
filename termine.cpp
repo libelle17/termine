@@ -60,6 +60,28 @@ char const *DPROG_T[T_MAX+1][SprachZahl]={
 	{"einzulesen: ","to load up: "},
 	// T_Zeit_von
 	{"Zeit von ","Time of "},
+	// 	T_eindeutige_ID_Prim,
+	{"eindeutige ID, Prim","unique id, primary"},
+	// 	T_Bezug_auf_terminakt,
+	{"Bezug auf Terminakt","reference to terminakt"},
+	// 	T_Pat_ID_aus_namen,
+	{"Pat_id aus namen","pat_id from namen"},
+	// 	T_Terminzeitpunkt,
+	{"Terminzeitpunkt","time of appointment"},
+	// T_Raum
+	{"Raum","room"},
+	// T_Zusatz
+	{"Zusatz","addition"},
+	// T_Zeitpunkt_der_Aktualisierung
+	{"Zeitpunkt der Aktualisierung","update time"},
+	// T_UTC_Dateiaenderung
+	{"UTC-Dateiänderung","utc file change time"},
+	// T_in_Klammern_angegebenes_Geburtsdatum
+	{"in Klammern angegebenes Geburtsdatum","birth date in brackets"},
+	// T_Termine
+	{"Termine","appointments"},
+	// T_prueftbtab
+	{"prueftbtab()","checktbtab()"},
 	{"",""} //α
 }; // char const *DPROG_T[T_MAX+1][SprachZahl]=
 
@@ -146,6 +168,33 @@ void hhcl::neurf()
 } // void hhcl::neurf
  //ω
 
+void prueftbtab(DB *My, const string& tbtab, const int obverb, const int oblog, const uchar direkt/*=0*/)
+{
+	fLog(violetts+Tx[T_prueftbtab]+schwarz,obverb,oblog);
+	const size_t aktc{0};
+	if (!direkt) {
+// Feld::Feld(const string& name, string typ/*=string()*/, const string& lenge/*=string()*/, const string& prec/*=string()*/, 
+//    const string& comment/*=string()*/, bool obind/*=0*/, bool obauto/*=0*/, bool nnull/*=0*/, const string& vdefa/*=string()*/, bool unsig/*=0*/):
+		Feld felder[] {
+			Feld("id","int","10","",Tx[T_eindeutige_ID_Prim],1,1),
+			Feld("taid","int","10","",Tx[T_Bezug_auf_terminakt],1,0,1),
+			Feld("pid","int","10","",Tx[T_Pat_ID_aus_namen],1,0,1),
+			Feld("zp","datetime","0","0",Tx[T_Terminzeitpunkt],1,0,1),
+			Feld("raum","varchar","100","0",Tx[T_Raum],1,0,1,"",0,"","latin1_german2_ci"),
+			Feld("zusatz","varchar","400","0",Tx[T_Zusatz],1,0,1,"",0,"utf8","utf8_unicode_ci"),
+			Feld("aktzeit","datetime","0","0",Tx[T_Zeitpunkt_der_Aktualisierung],1,0,1),
+			Feld("abgerufen","datetime","0","0",Tx[T_UTC_Dateiaenderung],1,0,1),
+		};
+		// auf jeden Fall ginge "binary" statt "utf8" und "" statt "utf8_general_ci"
+		Tabelle taba(My,tbtab,felder,elemzahl(felder),0,0,0,0,
+				Tx[T_Termine],"InnoDB","latin1","latin1_german2_ci","DYNAMIC");
+		if (taba.prueftab(aktc,obverb)) {
+			exit(schluss(11,rots+Tx[T_Fehler_beim_Pruefen_von]+schwarz+tbtab,1));
+		}
+	} // if (!direkt)
+} // int pruefouttab
+
+
 // wird aufgerufen in lauf
 void hhcl::virtpruefweiteres()
 {
@@ -156,6 +205,8 @@ void hhcl::virtpruefweiteres()
 		if (initDB()) {
 			exit(schluss(10,Tx[T_Datenbank_nicht_initialisierbar_breche_ab]));
 		}
+		prueftbtab(My,tbtab,obverb,oblog);
+		/*
 		const string sql{"CREATE TABLE IF NOT EXISTS `"+tbtab+"`(id int(10) auto_increment key, pid int(10) comment 'Pat_Id aus namen',zp datetime comment 'Terminzeitpunkt', zusatz varchar(400) comment 'Beschreibung und Eintragender', abgerufen datetime comment 'UTC-Zeitpunkt der Dateiänderung TMFTools', `gebdat` DATETIME COMMENT 'in Klammern angegebenes Geburtsdatum', aktzeit datetime comment 'Zeitpunkt der aktualisierung', key zp (zp), key aktzeit(aktzeit),key pid (pid)) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_german2_ci ROW_FORMAT=DYNAMIC"}; //   , CONSTRAINT `pid_rel` FOREIGN KEY (`pid`) REFERENCES `namen` (`pat_id`) ON DELETE CASCADE ON UPDATE CASCADE
 
 	RS rprueftm(My,tbtab);
@@ -163,6 +214,7 @@ void hhcl::virtpruefweiteres()
 	if (rprueftm.obqueryfehler) { // wenn nicht Constraint-Name schon vergeben
 		fLog(string("Fehler bei:")+sql+"': " +ltoan(rprueftm.obqueryfehler));
 	}
+	*/
 } // void hhcl::virtpruefweiteres
 
 // wird aufgerufen in lauf
@@ -366,6 +418,8 @@ void hhcl::virtautokonfschreib()
 	// const int altobverb=obverb;
 	// obverb=1;
 	hLog(violetts+Txk[T_autokonfschreib]+schwarz+", "+Txk[T_zu_schreiben]+((rzf||hccd.obzuschreib)?Txk[T_ja]:Txk[T_nein])); //ω
+	// <<rot<<"obzuschreib: "<<(int)hccd.obzuschreib<<schwarz<<endl;
+	// <<rot<<"rzf: "<<(int)rzf<<schwarz<<endl;
 	struct stat kstat{0}; //α
 	if (lstat(akonfdt.c_str(),&kstat))
 		hccd.obzuschreib=1;

@@ -27,8 +27,20 @@ enum T_
 	T_bei_Datei,
 	T_einzulesen,
 	T_Zeit_von,
+	T_eindeutige_ID_Prim,
+	T_Bezug_auf_terminakt,
+	T_Pat_ID_aus_namen,
+	T_Terminzeitpunkt,
+	T_Raum,
+	T_Zusatz,
+	T_Zeitpunkt_der_Aktualisierung,
+	T_UTC_Dateiaenderung,
+	T_in_Klammern_angegebenes_Geburtsdatum,
+	T_Termine,
+	T_prueftbtab,
 	T_MAX //α
 }; // enum T_ //ω
+void prueftbtab(DB *My, const string& tbtab, const int obverb, const int oblog, const uchar direkt=0);
 //α
 class hhcl:public dhcl
 {
