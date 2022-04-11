@@ -38,6 +38,9 @@ enum T_
 	T_in_Klammern_angegebenes_Geburtsdatum,
 	T_Termine,
 	T_prueftbtab,
+	T_frc_k,
+	T_force_l,
+	T_neu_Einlesen_erzwingen,
 	T_MAX //α
 }; // enum T_ //ω
 void prueftbtab(DB *My, const string& tbtab, const int obverb, const int oblog, const uchar direkt=0);
@@ -46,6 +49,7 @@ class hhcl:public dhcl
 {
 	private: 
 		uchar anhl=0;    // <DPROG> anhalten
+		uchar frc=0;    // Einlesen erzwigen
 		string dszahl="30"; // Datensatzzahl fuer Tabellenausgaben
 		//ω
 		string quelldat{"/DATA/Patientendokumente/plz/TMFTools.pdf"};

@@ -82,6 +82,12 @@ char const *DPROG_T[T_MAX+1][SprachZahl]={
 	{"Termine","appointments"},
 	// T_prueftbtab
 	{"prueftbtab()","checktbtab()"},
+	// T_frc_k,
+  {"f","f"},
+	// T_force_l,
+  {"force","force"},
+	// T_neu_Einlesen_erzwingen,
+	{"neu Einlesen erzwingen","force new reading"},
 	{"",""} //α
 }; // char const *DPROG_T[T_MAX+1][SprachZahl]=
 
@@ -91,24 +97,23 @@ const char *logdt="/var/log/" DPROG "vorgabe.log";//darauf wird in kons.h verwie
 pidvec pidw;
 
 using namespace std; //ω
-hhcl::hhcl(const int argc, const char *const *const argv):dhcl(argc,argv,DPROG,/*mitcron*/1) //α
-{
- // mitcron=0; //ω
-} // hhcl::hhcl //α
-// Hier neue Funktionen speichern: //ω
-//α
-// wird aufgerufen in lauf
-void hhcl::virtVorgbAllg()
-{
-	hLog(violetts+Tx[T_virtVorgbAllg]+schwarz); //ω
-	dhcl::virtVorgbAllg(); //α
-} // void hhcl::virtVorgbAllg
+hhcl::hhcl(const int argc, const char *const *const argv):dhcl(argc,argv,DPROG,/*mitcron*/1) //α 
+{ 
+	// mitcron=0; //ω 
+} // hhcl::hhcl //α 
+// Hier neue Funktionen speichern: //ω 
+//α 
+// wird aufgerufen in lauf 
+void hhcl::virtVorgbAllg() 
+{ 
+	hLog(violetts+Tx[T_virtVorgbAllg]+schwarz); //ω 
+	dhcl::virtVorgbAllg(); //α 
+} // void hhcl::virtVorgbAllg 
 
-// wird aufgerufen in lauf
-void hhcl::pvirtVorgbSpeziell()
+// wird aufgerufen in lauf 
+void hhcl::pvirtVorgbSpeziell() 
 {
-	hLog(violetts+Tx[T_pvirtVorgbSpeziell]+schwarz);
-	virtMusterVorgb(); //ω
+	hLog(violetts+Tx[T_pvirtVorgbSpeziell]+schwarz); virtMusterVorgb(); //ω
 	dhcl::pvirtVorgbSpeziell(); //α
 	hLog(violetts+Txk[T_Ende]+Tx[T_pvirtVorgbSpeziell]+schwarz);
 } // void hhcl::pvirtVorgbSpeziell
@@ -118,6 +123,7 @@ void hhcl::virtinitopt()
 { //ω
 	opn<<new optcl(/*pptr*/&anhl,/*art*/puchar,T_st_k,T_stop_l,/*TxBp*/&Tx,/*Txi*/T_DPROG_anhalten,/*wi*/1,/*Txi2*/-1,/*rottxt*/nix,/*wert*/1,/*woher*/1); //α //ω
 	opn<<new optcl(/*pptr*/&dszahl,/*art*/pdez,T_n_k,T_dszahl_l,/*TxBp*/&Tx,/*Txi*/T_Zahl_der_aufzulistenden_Datensaetze_ist_zahl_statt,/*wi*/1,/*Txi2*/-1,/*rottxt*/nix,/*wert*/-1,/*woher*/1); //α //ω
+	opn<<new optcl(/*pptr*/&frc,/*art*/puchar,T_frc_k,T_force_l,/*TxBp*/&Tx,/*Txi*/T_neu_Einlesen_erzwingen,/*wi*/1,/*Txi2*/-1,/*rottxt*/nix,/*wert*/1,/*woher*/1);
 	dhcl::virtinitopt(); //α
 } // void hhcl::virtinitopt
 
@@ -180,14 +186,14 @@ void prueftbtab(DB *My, const string& tbtab, const int obverb, const int oblog, 
 			Feld("taid","int","10","",Tx[T_Bezug_auf_terminakt],1,0,1),
 			Feld("pid","int","10","",Tx[T_Pat_ID_aus_namen],1,0,1),
 			Feld("zp","datetime","0","0",Tx[T_Terminzeitpunkt],1,0,1),
-			Feld("raum","varchar","100","0",Tx[T_Raum],1,0,1,"",0,"","latin1_german2_ci"),
-			Feld("zusatz","varchar","400","0",Tx[T_Zusatz],1,0,1,"",0,"utf8","utf8_unicode_ci"),
+			Feld("raum","varchar","100","0",Tx[T_Raum],1,0,1,"",0,"","utf8mb4_german2_ci"),
+			Feld("zusatz","varchar","400","0",Tx[T_Zusatz],1,0,1,"",0,"utf8mb4","utf8mb4_german2_ci"),
 			Feld("aktzeit","datetime","0","0",Tx[T_Zeitpunkt_der_Aktualisierung],1,0,1),
 			Feld("abgerufen","datetime","0","0",Tx[T_UTC_Dateiaenderung],1,0,1),
 		};
 		// auf jeden Fall ginge "binary" statt "utf8" und "" statt "utf8_general_ci"
 		Tabelle taba(My,tbtab,felder,elemzahl(felder),0,0,0,0,
-				Tx[T_Termine],"InnoDB","latin1","latin1_german2_ci","DYNAMIC");
+				Tx[T_Termine],"InnoDB","utf8mb4","utf8mb4_german2_ci","DYNAMIC");
 		if (taba.prueftab(aktc,obverb)) {
 			exit(schluss(11,rots+Tx[T_Fehler_beim_Pruefen_von]+schwarz+tbtab,1));
 		}
@@ -266,23 +272,28 @@ void hhcl::pvirtfuehraus() //α
 	} // 	if (lstat(datei.c_str(),&s1))
 	int einzulesen{0};
 	struct tm ta{0}; // abgerufen
-	memcpy(&ta,gmtime(&s1.st_mtime),sizeof ta); // hierbei Umwandlung in UTC
-	char ***cerg;
-	RS aktzmax(My,"SELECT MAX(abgerufen) FROM `"+tbtab+"`",aktc,ZDB); // dort als UTC gespeichert
-	if (cerg=aktzmax.HolZeile(),cerg?*cerg:0) {
-		struct tm tmj{0};
-		strptime(cjj(cerg,0),"%Y-%m-%d %T",&tmj);
-		time_t mktmj{mktime(&tmj)};
-		if (obverb) cout<<"MAX(abgerufen) FROM "<<tbtab<<": "<<blau<<cjj(cerg,0)<<schwarz<<" = "<<blau<<mktmj<<schwarz<<endl;
-		char buf[100];
-		strftime(buf, sizeof(buf), "%Y-%m-%d %T (%z; %Z)", &ta);
-		time_t tta{mktime(&ta)};
-		if (obverb) cout<<Tx[T_Zeit_von]<<drot<<datei<<schwarz<<": "<<blau<<buf<<schwarz<<" (UTC)"<<" = "<<blau<<tta<<schwarz<<endl;
-		if (mktmj<tta) einzulesen=1; // ta und tta sind UTC, s1.st_mtime nicht
-		if (obverb) cout<<"=> "<<Tx[T_einzulesen]<<blau<<einzulesen<<schwarz<<endl;
-	} else {
+	memcpy(&ta,localtime(&s1.st_mtime),sizeof ta); // hierbei Umwandlung in UTC
+	if (frc) {
 		einzulesen=1;
-	} // 	if (cerg=aktzmax.HolZeile(),cerg?*cerg:0) else
+		if (obverb) cout<<"force => einzulesen=1"<<endl;
+	} else {
+		char ***cerg;
+		RS aktzmax(My,"SELECT MAX(abgerufen) FROM `"+tbtab+"`",aktc,ZDB); // dort als UTC gespeichert
+		if (cerg=aktzmax.HolZeile(),cerg?*cerg:0) {
+			struct tm tmj{0};
+			strptime(cjj(cerg,0),"%Y-%m-%d %T",&tmj);
+			const time_t mktmj{mktime(&tmj)};
+			if (obverb) cout<<"MAX(abgerufen) FROM "<<tbtab<<": "<<blau<<cjj(cerg,0)<<schwarz<<" = "<<blau<<mktmj<<schwarz<<endl;
+			char buf[100];
+			strftime(buf, sizeof(buf), "%Y-%m-%d %T (%z; %Z)", &ta);
+			const time_t tta{mktime(&ta)};
+			if (obverb) cout<<Tx[T_Zeit_von]<<drot<<datei<<schwarz<<": "<<blau<<buf<<schwarz<<" "<<" = "<<blau<<tta<<schwarz<<endl; // (UTC)
+			if (mktmj<tta) einzulesen=1; // ta und tta sind UTC, s1.st_mtime nicht
+			if (obverb) cout<<"=> "<<Tx[T_einzulesen]<<blau<<einzulesen<<schwarz<<endl;
+		} else {
+			einzulesen=1;
+		} // 	if (cerg=aktzmax.HolZeile(),cerg?*cerg:0) else
+	} // frc else
 
 	if (einzulesen) {
 		FILE* const infile{fopen(datei.c_str(),"r")};
@@ -372,11 +383,11 @@ void hhcl::pvirtfuehraus() //α
 						if (isnumeric(pids.c_str())) {
 							//							char buf[1000]{0};
 							//							memset(buf,0,sizeof buf);
-							time_t t{time(0)};
-							struct tm *ts{gmtime(&t)};
+							const time_t t{time(0)};
+							struct tm * const ts{gmtime(&t)};
 							//caus<<"raum: '"<<raum<<"', gtrim(&raum): '"<<*gtrim(&raum)<<"', sqlft: '"<<sqlft(MySQL,gtrim(&raum))<<"'\n";
 							//caus<<"zusatz: '"<<zusatz<<"', gtrim(&zusatz): '"<<*gtrim(&zusatz)<<"', sqlft: '"<<sqlft(MySQL,gtrim(&zusatz))<<"'\n";
-							RS loe(My,"DELETE FROM `"+tbtab+"` WHERE zp="+sqlft(MySQL,&tzeit)+" AND raum="+sqlft(MySQL,raum)+" AND pid="+sqlft(MySQL,pids),aktc,ZDB);
+							RS loe(My,"DELETE FROM `"+tbtab+"` WHERE zp>="+sqlft(MySQL,&tzeit)+" AND pid="+sqlft(MySQL,pids)+" AND aktzeit<"+sqlft(MySQL,ts),aktc,ZDB); // " AND raum="+sqlft(MySQL,raum)+
 							RS rins(My,tbtab); 
 							einf.clear();
 							einf.push_back(instyp(My->DBS,"pid",atol(pids.c_str())));

@@ -2,7 +2,7 @@
 .\" manual page for ²DPROG²
 .\" write to geraldschade@gmx.de if You discover an error or a deficit in the program
 .pc
-.TH man 1 "07.12.21" "Version 0.10345" "\fB²DPROG²\fR man page"
+.TH man 1 "11.04.22" "Version 0.10345" "\fB²DPROG²\fR man page"
 .SH NAME
 \fB²DPROG² \- Fax server functionality\fR: induces automatic fax transmission of files, naming of received faxes and logging of all of them in a database
 .br
@@ -72,6 +72,8 @@ Depending on operating system, accessability and preferences the users thus coul
 \fB -st, --stop\fR: stop termine (\fB0\fR)
 .br
 \fB -n, --reccount <string>\fR: No. of listed entries = <no> instead of ('\fB30\fR')
+.br
+\fB -f, --force\fR: force new reading (\fB0\fR)
 .br
 \fB -sqlv, --sql-verbose\fR: screen output with SQL commands (\fB0\fR)
 .br

@@ -2,7 +2,7 @@
 .\" Manual-Seite für ²DPROG²
 .\" Schreiben Sie an geraldschade@gmx.de, wenn Sie Fehler oder Mängel entdeckt haben
 .pc
-.TH man 1 "07.12.21" "Version 0.10345" "Manual-Seite für ²DPROG²"
+.TH man 1 "11.04.22" "Version 0.10345" "Manual-Seite für ²DPROG²"
 .SH NAME
 \fB²DPROG² \- FaxServer-Funktionalität\fR: veranlasst automatischen Faxversand von Dateien, Benennung empfangener Faxe und Protokollierung aller Faxe in einer Datenbank 
 .br
@@ -72,6 +72,8 @@ Der Benutzer könnte also je nach Betriebssystem, Zugriffsmöglichkeit und Präf
 \fB -st, --stop\fR: termine anhalten (\fB0\fR)
 .br
 \fB -n, --dszahl <string>\fR: Zahl der aufzulistenden Datensaetze = <zahl> statt ('\fB30\fR')
+.br
+\fB -f, --force\fR: neu Einlesen erzwingen (\fB0\fR)
 .br
 \fB -sqlw, --sql-wortreich\fR: Bildschirmausgabe mit SQL-Befehlen (\fB0\fR)
 .br
