@@ -336,12 +336,13 @@ void hhcl::pvirtfuehraus() //α
 		while (fgets(Zeile, sizeof Zeile, infile)) {
 			string szn{Zeile};
 			szn.resize(200,32);
+			char /*lfd[10],pids[11],*/wota[11],name[100],gebdat[21]/*,raum[21],zusatz[300]*/;
+			/* *raum=0, *zusatz=0,*pids=0; */ 
+			string lfd(10,0),pids(11,0),raum(21,0),zusatz(300,0);
+			struct tm tzeit{0},tz0{0};
+			wota[0]=0;name[0]=0;gebdat[0]=0;/*lfd="";pids="";raum="";zusatz="";*/memcpy(&tzeit,&tz0,sizeof tzeit);
 			if (szn.find_first_not_of(" \r\n\f\t\v=")!=string::npos && (szn.find("Seite")==string::npos || szn.find(" vom ")==string::npos)) {
-				if (obverb>1) cout<<":>"<<szn<<endl;
-				char /*lfd[10],pids[11],*/wota[11],name[100],gebdat[21]/*,raum[21],zusatz[300]*/;
-				/* *raum=0, *zusatz=0,*pids=0; */ 
-				string lfd(10,0),pids(11,0),raum(21,0),zusatz(300,0);
-				struct tm tzeit{0};
+				if (obverb) cout<<":>"<<szn<<endl;
 				if (szn.find("Terminart")!=string::npos && szn.find("Datum")!=string::npos) {
 					if (!uefertig) {
 						uefertig=1;
@@ -350,7 +351,7 @@ void hhcl::pvirtfuehraus() //α
 							if ((szn[pos]==' '||pos==szn.length()-1) && lbuch) {
 								for(size_t uep=0;uep<sizeof uea/sizeof *uea;uep++) {
 									if (uea[uep].name.find(ue.name.substr(0,2))==0) {
-										uea[uep].p=ue.p;
+										uea[uep].p=ue.p-1; // -1 vom 20.11.22
 										break;
 									} // 									if (uea[uep].name.find(ue.name.substr(0,2))==0)
 								} // 								for(size_t uep=0;uep<sizeof uea/sizeof *uea;uep++)
@@ -368,7 +369,7 @@ void hhcl::pvirtfuehraus() //α
 							if (uea[vnr].p) {
 								if ((vnr && uea[vnr-1].p)||!vnr) uea[vnr].anf=uea[vnr].p; // -1;
 								if (vnr<sizeof uea/sizeof *uea-1) {
-									if (uea[vnr+1].p) uea[vnr].len=uea[vnr+1].p-uea[vnr].anf-1; 
+									if (uea[vnr+1].p) uea[vnr].len=uea[vnr+1].p-uea[vnr].anf; // -1;  // Kommentar 20.11.22
 								} 
 								if (!uea[vnr].len) uea[vnr].len=(size_t)-1;
 							} // 					if (uea[vnr].p)
@@ -400,20 +401,31 @@ void hhcl::pvirtfuehraus() //α
 							}
 						}
 						if ((anf[vnr] || len[vnr]) && anf[vnr]<szn.size()) {
+							size_t beg,lng;
+							beg=anf[vnr];
+							lng=len[vnr];
+							while (szn[beg]==' ') {
+								beg++;
+								lng--;
+								if (!lng) break;
+							}
+							if (obverb>1) {
+								caus<<"vnr: "<<blau<<vnr<<schwarz<<": "<<"'"<<szn.substr(beg,lng)<<"'"<<endl;
+							}
 							switch (vnr) {
-								case 0: sscanf(szn.substr(anf[vnr],len[vnr]).c_str(),"%[^\1]",&lfd[0]); break;
-								case 1: sscanf(szn.substr(anf[vnr],len[vnr]).c_str(),"%s",&pids[0]); break;
-								case 2: sscanf(szn.substr(anf[vnr],len[vnr]).c_str(),"%s",&wota[0]); break;
-								case 3: sscanf(szn.substr(anf[vnr],len[vnr]).c_str(),"%2d.%2d.%d",&tzeit.tm_mday,&tzeit.tm_mon,&tzeit.tm_year); break;
-								case 4: sscanf(szn.substr(anf[vnr],len[vnr]).c_str(),"%2d:%2d",&tzeit.tm_hour,&tzeit.tm_min); break;
-								case 5: if (szn.substr(anf[vnr],len[vnr]).find("(")!=string::npos) 
-													sscanf(szn.substr(anf[vnr],len[vnr]).c_str(),"%[^\\(](%10[^\\)]",name,gebdat);
+								case 0: sscanf(szn.substr(beg,lng).c_str(),"%[^\1]",&lfd[0]); break;
+								case 1: sscanf(szn.substr(beg,lng).c_str(),"%s",&pids[0]); break;
+								case 2: sscanf(szn.substr(beg,lng).c_str(),"%s",&wota[0]); break;
+								case 3: sscanf(szn.substr(beg,lng).c_str(),"%2d.%2d.%d",&tzeit.tm_mday,&tzeit.tm_mon,&tzeit.tm_year); break;
+								case 4: sscanf(szn.substr(beg,lng).c_str(),"%2d:%2d",&tzeit.tm_hour,&tzeit.tm_min); break;
+								case 5: if (szn.substr(beg,lng).find("(")!=string::npos) 
+													sscanf(szn.substr(beg,lng).c_str(),"%[^\\(](%10[^\\)]",name,gebdat);
 												else
-													sscanf(szn.substr(anf[vnr],len[vnr]).c_str(),"%[^\1]",&zusatz[0]);
+													sscanf(szn.substr(beg,lng).c_str(),"%[^\1]",&zusatz[0]);
 												break;
-								case 6: sscanf(szn.substr(anf[vnr],len[vnr]).c_str(),"%s",&raum[0]); break;
+								case 6: sscanf(szn.substr(beg,lng).c_str(),"%s",&raum[0]); break;
 //								case 7: sscanf(szn.substr(anf[vnr]).c_str(),"%[^\1]",&zusatz[0]); break;
-								case 7: sscanf(szn.substr(anf[vnr]).c_str(),"%s",&zusatz[0]); break;
+								case 7: sscanf(szn.substr(beg).c_str(),"%s",&zusatz[0]); break;
 							} // 						switch (vnr) 
 						} // 					if ((anf[vnr] || len[vnr]) && anf[vnr]<szn.size())
 					} // 				for(size_t vnr=0;vnr<sizeof uea/sizeof *uea;vnr++)
