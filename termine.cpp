@@ -425,7 +425,8 @@ void hhcl::pvirtfuehraus() //α
 												break;
 								case 6: sscanf(szn.substr(beg,lng).c_str(),"%s",&raum[0]); break;
 //								case 7: sscanf(szn.substr(anf[vnr]).c_str(),"%[^\1]",&zusatz[0]); break;
-								case 7: sscanf(szn.substr(beg).c_str(),"%s",&zusatz[0]); break;
+//								case 7: sscanf(szn.substr(beg).c_str(),"%s",&zusatz[0]); break;
+								case 7: sscanf(szn.substr(beg).c_str(),"%[^\1]",&zusatz[0]); break;
 							} // 						switch (vnr) 
 						} // 					if ((anf[vnr] || len[vnr]) && anf[vnr]<szn.size())
 					} // 				for(size_t vnr=0;vnr<sizeof uea/sizeof *uea;vnr++)
