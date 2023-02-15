@@ -190,6 +190,7 @@ void prueftbtab(DB *My, const string& tbtab, const int obverb, const int oblog, 
 			Feld("zusatz","varchar","400","0",Tx[T_Zusatz],1,0,1,"",0,"utf8mb4","utf8mb4_german2_ci"),
 			Feld("aktzeit","datetime","0","0",Tx[T_Zeitpunkt_der_Aktualisierung],1,0,1),
 			Feld("abgerufen","datetime","0","0",Tx[T_UTC_Dateiaenderung],1,0,1),
+			Feld("gebdat","datetime","0","0",Tx[T_in_Klammern_angegebenes_Geburtsdatum],1,0,1),
 		};
 		// auf jeden Fall ginge "binary" statt "utf8" und "" statt "utf8_general_ci"
 		Tabelle taba(My,tbtab,felder,elemzahl(felder),0,0,0,0,
