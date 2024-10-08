@@ -283,7 +283,8 @@ void hhcl::pvirtfuehraus() //α
 	hLog(violetts+Tx[T_pvirtfuehraus]+schwarz); //ω
 	char cpt[MAXHOSTNAMELEN]; size_t cptlen{MAXHOSTNAMELEN};
 	gethostname(cpt, cptlen);
-	const string pdfzt{"test -f '"+datei+"' -a ! '"+datei+"' -ot '"+quelldat+"'||pdftotext -layout '"+quelldat+"' '"+datei+"'"}; //pdfzutext
+//	const string pdfzt{"test -f '"+datei+"' -a ! '"+datei+"' -ot '"+quelldat+"'||pdftotext -layout '"+quelldat+"' '"+datei+"'"}; //pdfzutext
+const string pdfzt{"test -f '"+datei+"' -a ! '"+datei+"' -ot '"+quelldat+"'||{ qd=\""+quelldat+"\";od=$(dirname ${qd});soffice --headless --convert-to txt --outdir ${od} ${qd} && sed '/^0 [0-9][^(]*( [^)]*)\\|^: 0\\|; 0/!d;s/[^(]*(\\(.*$\\)/\\1/;s/)\\(S \\)\\?$//;s/\\\\)/)/g;s/\\\\(/(/g;s/^ \\{10\\}//;/^ $/d;s/\\(^[^)]*\\))[[].*/\\1/;s/^ \\{6\\}=//;s/\\\\304/Ä/g;s/\\\\307/Ç/g;s/\\\\326/Ö/g;s/\\\\334/Ü/g;s/\\\\337/ß/g;s/\\\\341/á/g;s/\\\\344/ä/g;s/\\\\366/ö/g;s/\\\\374/ü/g' ${qd/.pdf/.txt}>'"+datei+"';rm ${qd/.pdf/.txt};}"};
 	systemrueck(pdfzt.c_str(),obverb,oblog);
 	struct stat s1{};
 	if (obverb) cout<<Txk[T_datei]<<blau<<datei<<schwarz<<endl;
