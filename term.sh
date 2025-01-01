@@ -1,4 +1,5 @@
 #!/bin/bash
+# trägt die neuen Termine aus /DATA/Patientendokumente/plz/TMFTools.pdf in quelle->termine ein
 blau="\033[1;34m";
 gruen="\033[1;32m";
 dblau="\033[0;34;1;47m";
@@ -40,9 +41,9 @@ else
 fi;
 if test "$obschreib"; then
 printf "rufe auf: ${blau}pdftotext $QDT$reset\n"
-# pdftotext $QDT -layout
+pdftotext $QDT -layout
 NEUQDT=$(echo $QDT|sed 's/\(.*\).pdf$/\1.txt/');
-printf "dies hat erstellt: $blau$NEUQDT$reset\n";
+printf " dies hat erstellt: $blau$NEUQDT$reset\n";
 # echo "START TRANSACTION;" > "$dbhil";
 printf "" > "$dbhil";
 echo "START TRANSACTION;" > "$dbupd";
@@ -128,12 +129,14 @@ echo ";\nSET @nachins=(SELECT COUNT(0) FROM $urtab);" >> "$dbhil";
 echo "SET @nachloe=(SELECT COUNT(0) FROM $urtab);" >> "$dbupd";
 cat "$dbhil" >> "$dbupd";
 printf ";\nUPDATE $urtab t JOIN $urtab v ON t.pid=v.pid AND t.zp=v.zp AND t.raum=v.raum AND TRIM(REPLACE(t.zusatz,'\n',''))='' AND TRIM(REPLACE(v.zusatz,'\n','') NOT IN ('','..','...','n')) SET t.zusatz=v.zusatz;\n" >> "$dbupd";
-echo "SET @nachupd=(SELECT COUNT(0) FROM $urtab);" >> "$dbupd";
+echo "SET @nachupd=(SELECT ROW_COUNT());" >> "$dbupd";
 printf "DELETE FROM $urtab WHERE EXISTS(SELECT 0 FROM $urtab v WHERE pid=$urtab.pid AND zp=$urtab.zp AND raum=$urtab.raum and zusatz=$urtab.zusatz AND aktzeit<$urtab.aktzeit);" >> "$dbupd";
-echo "SET @doppupd=(SELECT COUNT(0) FROM $urtab);" >> "$dbupd";
-echo "SELECT CONCAT('vorher:    ',@vorher) zahlen UNION SELECT CONCAT('nachloe:   ',@nachloe) UNION SELECT CONCAT('nachins:   ',@nachins) UNION SELECT CONCAT('nachupd:   ',@nachupd) UNION SELECT CONCAT('dopploe:   ',@dopploe);" >> "$dbloe";
+echo "SET @dopploe=(SELECT COUNT(0) FROM $urtab);" >> "$dbupd";
+printf "DELETE FROM $urtab WHERE EXISTS(SELECT 0 FROM $urtab v WHERE pid=$urtab.pid AND zp=$urtab.zp AND raum=$urtab.raum and zusatz=$urtab.zusatz AND aktzeit<$urtab.aktzeit);" >> "$dbupd";
+echo "SELECT CONCAT('vorher:    ',@vorher) Zahlen UNION SELECT CONCAT('nachloe:   ',@nachloe) UNION SELECT CONCAT('nachins:   ',@nachins) UNION SELECT CONCAT('Zusatz ergä.: ',@nachupd) UNION SELECT CONCAT('dopploe:   ',@dopploe);" >> "$dbupd";
 echo "COMMIT;" >> "$dbupd";
-# mariadb --defaults-extra-file=~/.mariadbpwd quelle < "$dbhil";
+# die "PAGER set to stout"-Meldung bringe ich nicht weg, auch nicht mit 'pager="/usr/bin/less -SFX"' in den Optionen
 mariadb --defaults-extra-file=~/.mariadbpwd quelle < "$dbupd";
+rm "$dbhil";
+rm "$dbupd";
 fi;
-  # print isnum($0), $0 >> "'$dbhil'"
