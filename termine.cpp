@@ -196,11 +196,24 @@ void prueftbtab(DB *My, const string& tbtab, const int obverb, const int oblog, 
 		Tabelle taba(My,tbtab,felder,elemzahl(felder),0,0,0,0,
 				Tx[T_Termine],"InnoDB","utf8mb4","utf8mb4_german2_ci","DYNAMIC");
 		if (taba.prueftab(aktc,obverb)) {
-			exit(schluss(11,rots+Tx[T_Fehler_beim_Pruefen_von]+schwarz+tbtab,1));
+			kexitDB(My,schluss(11,rots+Tx[T_Fehler_beim_Pruefen_von]+schwarz+tbtab,1));
 		}
 	} // if (!direkt)
 } // int pruefouttab
 
+// TEMP-Fix 2026-07-06: siehe termine.h
+void hhcl::kexit(int code)
+{
+	if (My) {
+		for (size_t i=0;i<My->conz;i++) {
+			if (My->conn[i]) {
+				mysql_close(My->conn[i]);
+				My->conn[i]=0;
+			}
+		}
+	}
+	exit(code);
+} // void hhcl::kexit(int code)
 
 // wird aufgerufen in lauf
 void hhcl::virtpruefweiteres()
@@ -210,7 +223,7 @@ void hhcl::virtpruefweiteres()
 	hcl::virtpruefweiteres(); // z.Zt. leer //α
 	//	DB My(MySQL,host,muser,mpwd,/*conz*/1,dbq);
 		if (initDB()) {
-			exit(schluss(10,Tx[T_Datenbank_nicht_initialisierbar_breche_ab]));
+			kexit(schluss(10,Tx[T_Datenbank_nicht_initialisierbar_breche_ab]));
 		}
 		prueftbtab(My,tbtab,obverb,oblog);
 		/*
