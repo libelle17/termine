@@ -2,7 +2,7 @@
 .\" manual page for ²DPROG²
 .\" write to geraldschade@gmx.de if You discover an error or a deficit in the program
 .pc
-.TH man 1 "08.07.26" "Version 0.10347" "\fB²DPROG²\fR man page"
+.TH man 1 "12.10.26" "Version 0.10349" "\fB²DPROG²\fR man page"
 .SH NAME
 \fB²DPROG² \- Appointment import\fR: reads an appointment list exported as PDF and records the appointments in a MariaDB database
 .br
@@ -79,6 +79,8 @@ New appointments are inserted into the table \fBtermine\fR within a transaction.
 .br
 \fB -mpwd, --mpwd <string>\fR: takes the password <string> for MySQL/MariaDB
 .br
+\fB -cmpwd, --changemariadbpwd <string>\fR: changes the MySQL/MariaDB password to <string> (stores it encrypted in the configuration) and exits afterwards without further processing\fB or not\fR
+.br
 \fB -db, --database <string>\fR: uses the database <string> instead of ('\fB\fR')
 .br
 \fB -sz, --locktimeout <zahl>\fR: sets the maximum wait time for external table locks to <zahl> seconds (lock_wait_timeout) instead of (\fB180\fR)
@@ -92,6 +94,8 @@ New appointments are inserted into the table \fBtermine\fR within a transaction.
 \fB -l, --log <zahl>\fR: put detailed logs in file '\fB/var/log/termine.log\fR' (otherwise shorter) (\fB0\fR)
 .br
 \fB -cm, --cronminutes <string>\fR: every how many minutes shall \fBtermine\fR be called in crontab (0=not at all), instead of  ('\fB0\fR')
+.br
+\fB -cr, --cronhosts <string>\fR: comma-separated short host names (before the first dot) on which the crontab entry is self-maintained ('\fBlinux1\fR')
 .br
 \fB -autoupd, --autoupdate <zahl>\fR: Update program automatically (\fB1\fR)
 .SH FUNCTIONALITY
